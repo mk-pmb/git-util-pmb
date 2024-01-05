@@ -1,0 +1,25 @@
+{ "name": "git-util-pmb",
+  "version": "0.0.1",
+  "description": "Some of my git utilities.",
+  "keywords": ["git"],
+
+  "author": "M.K. (https://github.com/mk-pmb)",
+  "homepage": "https://github.com/mk-pmb/git-util-pmb/#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mk-pmb/git-util-pmb.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mk-pmb/git-util-pmb/issues"
+  },
+  "contributors": [],
+
+  "private": true, "license": "ISC",
+
+  "dependencies": {
+  },
+  "devDependencies": {},
+
+
+  "engines": { "bash": ">=4.0.0", "git": ">=2.25.1" }
+}
