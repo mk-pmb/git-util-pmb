@@ -19,7 +19,7 @@
   "scripts": { "postinstall": "node -r libdir-binlinks-cfg-linker-pmb -e 0" },
 
   "dependencies": {
-    "libdir-binlinks-cfg-linker-pmb": "^0.1.3"
+    "libdir-binlinks-cfg-linker-pmb": "^0.1.5"
   },
   "devDependencies": {},
 
