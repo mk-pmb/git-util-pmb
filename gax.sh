@@ -3,9 +3,7 @@
 
 
 function gax_cli_main () {
-  local SELFPATH="$(readlink -m -- "$BASH_SOURCE"/..)"
-  source -- "$SELFPATH/with_dotgit_worktree_symlink.sh" --lib || exit $?
-
+  # local SELFPATH="$(readlink -m -- "$BASH_SOURCE"/..)"
   local GAX_ACTION="$1"; shift
   local GAX_CMD=( git-annex )
   local GAX_ARGS=()
@@ -57,7 +55,7 @@ function gax_cli_main () {
   [ -n "${CFG[announce-cmd]}" ] \
     && echo "I: gonna run: ${GAX_CMD[*]} ${GAX_ARGS[*]}"
 
-  with_dotgit_worktree_symlink "${GAX_CMD[@]}" "${GAX_ARGS[@]}" "$@"
+  with-dotgit-worktree-symlink "${GAX_CMD[@]}" "${GAX_ARGS[@]}" "$@"
   local GAX_RV="$?"
 
   [ -n "${CFG[announce-rv]}" ] \
