@@ -2,6 +2,17 @@
 # -*- coding: utf-8, tab-width: 2 -*-
 
 function rewrite_author () {
+  local GIT_DIR="$(git rev-parse --git-dir)"
+  local BRANCH_PREFIX="${FUNCNAME//_/-}"
+  local VAL="$GIT_DIR/refs/original/refs/heads/$BRANCH_PREFIX-"
+  for VAL in "$VAL"*; do
+    [ -f "$VAL" ] || continue
+    VAL="${VAL:${#GIT_DIR}}"
+    VAL="${VAL#/}"
+    echo "D: Cleaning up old unused ref: $VAL"
+    git update-ref -d -- "$VAL"
+  done
+
   local OLD_MAIL="$1"; shift
   local OLD_MAIL_GUESS=
   [ -n "$OLD_MAIL" ] || OLD_MAIL_GUESS="$(git log -n 1 --pretty='format:%ae')"
@@ -20,15 +31,11 @@ function rewrite_author () {
   [ -n "$OLD_MAIL_GUESS" ] && [ "$OLD_MAIL_GUESS" == "$NEW_MAIL" ] && return $(
     fail 2 'guess old mail address different from new mail address')
 
-  local BRANCH_PREFIX="${FUNCNAME//_/-}"
   local TEMP_BRANCH="$BRANCH_PREFIX-$(date +'%Y-%m%d-%H%M')-$$"
   echo -n "Create temporary branch $TEMP_BRANCH: "
   git branch "$TEMP_BRANCH"
   echo -n "checkout: "
   git checkout "$TEMP_BRANCH" || return $?
-
-  find .git/refs/original/ -maxdepth 1 \
-    -name "${BRANCH_PREFIX:-/E/no/BRANCH_PREFIX}*" -delete
 
   export OLD_MAIL NEW_NAME NEW_MAIL
   echo -n 'Rewrite: '
