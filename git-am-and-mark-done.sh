@@ -9,6 +9,7 @@ function am_and_mark_done () {
   local -A CFG=(
     [health-check]=
     [limit]=
+    [am-flags]=
     )
   local ARG=
   local N_DONE=0
@@ -16,6 +17,11 @@ function am_and_mark_done () {
     ARG="${TODO[0]}"; TODO=( "${TODO[@]:1}" )
     case "$ARG" in
       '' ) continue;;
+      -d ) ARG='--committer-date-is-author-date';;
+    esac
+    case "$ARG" in
+      --committer-date-is-author-date | \
+      '' ) CFG[am-flags]+="$ARG "; continue;;
       --health-check=* | \
       --limit=* | \
       '' )
@@ -50,7 +56,7 @@ function am_and_mark_done__one () {
     *'=?'*'?='* ) decode_want_subj || return $?;;
   esac
 
-  vdo git am -- "$SRC"
+  vdo git am ${CFG[am-flags]} -- "$SRC"
   local AM_RV="$?"
   if [ "$AM_RV" != 0 ]; then
     vdo git am --abort
