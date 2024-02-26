@@ -195,7 +195,7 @@ function verify_next_hunk () {
       explain_differing_patch_context || return $?
       ;;
     * )
-      echo "E: diff failed! $BEST_DIFF rv=$DIFF_RV" >&2
+      echo "E: diff failed! diff rv=$DIFF_RV" >&2
       return 7;;
   esac
 }
