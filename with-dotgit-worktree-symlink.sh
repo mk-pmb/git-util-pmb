@@ -71,4 +71,4 @@ function cleanup_dotgit_worktree_symlink () {
 
 
 
-with_dotgit_worktree_symlink "$@"; exit $?
+[ "$1" == --lib ] && return 0; with_dotgit_worktree_symlink "$@"; exit $?
