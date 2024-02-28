@@ -146,6 +146,14 @@ function verify_next_hunk () {
     '@@ -'*,*' +'*' @@ '* ) ATAT_LINE="${ATAT_LINE%% @@ *} @@";;
   esac
   case "$ATAT_LINE" in
+    '@@ -'[0-9,]*' +'[0-9]' @@'* )
+      ATAT_LINE="${ATAT_LINE/% @@/,1 @@}";;
+  esac
+  case "$ATAT_LINE" in
+    '@@ -'[0-9]' +'[0-9,]*' @@'* )
+      ATAT_LINE="${ATAT_LINE/ +/,1 +}";;
+  esac
+  case "$ATAT_LINE" in
     '@@ -'[0-9]*,[0-9]*' +'[0-9]*,[0-9]*' @@'* ) ;;
     '@@ -0,0 +'[1-9]*' @@'* ) ATAT_LINE="${ATAT_LINE/ \+/ +0,}";;
   esac
