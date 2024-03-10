@@ -4,9 +4,14 @@
 
 function why_does_patch_not_apply () {
   export LANG{,UAGE}=en_US.UTF-8  # make error messages search engine-friendly
+  local SELFFILE="$(readlink -m -- "$BASH_SOURCE")"
   local DBGLV="${DEBUGLEVEL:-0}"
+  local PAGED='smart-less-pmb -e'
+
   local PATCH_FILE="$1"; shift
   case "$PATCH_FILE" in
+    -S ) clear; $PAGED "$SELFFILE" "$@"; return $?;;
+    -S* ) clear; $PAGED "$SELFFILE" -"${PATCH_FILE:2}" "$@"; return $?;;
     -0 ) PATCH_FILE="$(ls -- 0*.patch | head --lines=1)";;
   esac
   local PATCH_LINES="$(cat -- "$PATCH_FILE")"
