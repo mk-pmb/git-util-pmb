@@ -254,7 +254,7 @@ function calc_modified_atat () {
 
 function verify_next_hunk__diff_core () {
   local HUNK_LEN="${#CUR_HUNK[diff]}"
-  # ^-- Almost >= number of lines in the patch, so using that for the number
+  # ^-- Always >= number of lines in the patch, so using that for the number
   #     of context lines ensures we always see the entire hunk.
   diff -U "$HUNK_LEN" \
     --label "Actual old lines currently in $EFF_ORIG_FILE" <(
