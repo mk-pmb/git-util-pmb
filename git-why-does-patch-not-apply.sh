@@ -215,15 +215,7 @@ function verify_next_hunk () {
 
 
 function explain_differing_patch_context () {
-  <<<"$DIFF_REPORT" sed -rf <(echo '
-    3{/^@@ /d}
-    3,$s~$~¶~
-    s!^\-!\x1b[31m&!
-    s!^\+!\x1b[32m&!
-    /^\x1b\[/s~$~\x1b[m~
-    3,$s~^~¦~
-    s~^~  ~
-    ')
+  <<<"$DIFF_REPORT" colorize_diff
   local ADDS_DELS="$(<<<"$DIFF_REPORT" cut -b 1)"
   [[ "$ADDS_DELS" == $'-\n+\n@\n'* ]] || return 4$(
     echo "E: $FUNCNAME: Unexpected diff format for ADDS_DELS" >&2)
@@ -238,6 +230,19 @@ function explain_differing_patch_context () {
   [ -z "$HEAD_DELS" ] || echo "H: If this hunk is misaligned," \
     "you may need to increase the offset line numbers by ${#HEAD_DELS}." \
     "-> $(calc_modified_atat %+${#HEAD_DELS} %)"
+}
+
+
+function colorize_diff () {
+  sed -rf <(echo '
+    3{/^@@ /d}
+    3,$s~$~¶~
+    s!^\-!\x1b[31m&!
+    s!^\+!\x1b[32m&!
+    /^\x1b\[/s~$~\x1b[m~
+    3,$s~^~¦~
+    s~^~  ~
+    ')
 }
 
 
