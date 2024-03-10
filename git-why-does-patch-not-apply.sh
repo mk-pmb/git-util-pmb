@@ -182,6 +182,10 @@ function verify_next_hunk () {
   verify_patch_length new "${ATAT_NUMS[3]}"
 
   local EFF_ORIG_FILE="$PROJ_DIR$ORIG_FILE"
+  if [ "${ATAT_NUMS[0]},${ATAT_NUMS[1]}" == 0,0 ]; then
+    verify_newly_created_file
+    return $?
+  fi
   CUR_HUNK[lines_old]="$(
     [ "${ATAT_NUMS[1]}" == 0 ] || tail --lines="+${ATAT_NUMS[0]}" \
       -- "$EFF_ORIG_FILE" | head --lines="${ATAT_NUMS[1]}"; echo : )"
@@ -297,6 +301,37 @@ function verify_patch_length () {
   echo "W: Hunk line declares $ATAT $SIDE lines but contains $WANT!" >&2
   (( MISMATCHES += 1 ))
   return 6
+}
+
+
+function verify_newly_created_file () {
+  if [ ! -f "$EFF_ORIG_FILE" ]; then
+    echo +OK "This hunk introduces a new file."
+    return 0
+  fi
+  (( MISMATCHES += 1 ))
+  echo W: "This hunk conflicts by re-introducing a file as new."
+  local DIFF_REPORT= # pre-declare so "local" doesn't affect return value.
+  DIFF_REPORT="$(verify_newly_created_file__diff)"
+  local DIFF_RV=$?
+  case "$DIFF_RV:${#DIFF_REPORT}" in
+    0:0 )
+      echo H: 'However, this chunk creates the same content,' \
+        'and thus can safely be skipped.'
+      return 0;;
+    1:* )
+      colorize_diff <<<"$DIFF_REPORT"
+      return 0;;
+  esac
+  echo E: "Unexpected diff failure, rv=$DIFF_RV" >&2
+  return 4
+}
+
+
+function verify_newly_created_file__diff () {
+  diff -U 3 --label "$EFF_ORIG_FILE" "$EFF_ORIG_FILE" \
+    --label "Text of new file introduced in patch file $PATCH_FILE" <(
+    <<<"${CUR_HUNK[diff]}" sed -nre 's!^( |\+|$)!!p')
 }
 
 
