@@ -3,7 +3,14 @@
 
 
 function glc_main () {
-  tty --silent || exec &> >(pager)
+  set -o pipefail
+
+  if tty --silent <&1; then
+    "$FUNCNAME" "$@" | pager $( (
+      man pager | grep -Pe '^\s*(-\w |)(or |)--quit-if-one-screen(\s|$)'
+    ) | grep -oPe '--\S+' )
+    return $?
+  fi
 
   local GIT_TASK='log'
   case "$1" in
