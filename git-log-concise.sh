@@ -111,7 +111,10 @@ function glc_summarize_commit_hashes () {
       ;;
     --hoist ) CHERRIES="${CHERRIES#* } '${CHERRIES%% *}'";;
   esac
-  echo "# git reset --hard $BASE && git chp $CHERRIES && git diff $LATEST"
+  echo "# git stash" \
+    "&& git reset --hard $BASE" \
+    "&& git chp $CHERRIES" \
+    "&& git diff $LATEST"
 }
 
 
