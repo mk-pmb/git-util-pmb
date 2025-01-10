@@ -48,19 +48,7 @@ function add_to_or_edit_gitignore () {
   local HAD_LEN="${#HAD}"
   [[ "$HAD" == *$'\n' ]] || echo >>"$IGN_FN" || return $?
 
-  local ARG=
-  if [ "$HAD_LEN" == 0 ]; then
-    echo '# Auto-generated files:' >>"$IGN_FN" || return $?
-    ARG="${1%/}"
-    case "$ARG" in
-      node_modules | \
-      /// )
-      echo "/$ARG" >>"$IGN_FN" || return $?
-      local VISUAL=
-      shift;;
-    esac
-  fi
-
+  [ "$HAD_LEN" -ge 1 ] || suggest_initial_ignores >>"$IGN_FN" || return $?
   [[ "${HAD,,}" == *$'\n# unsorted'* ]] || echo >>"$IGN_FN" $'\n\n\n#' \
     'Unsorted stuff (this section should be empty):' || return $?
 
@@ -68,6 +56,7 @@ function add_to_or_edit_gitignore () {
     [01]: ) "${VISUAL:-true}" "$IGN_FN"; return $?;;
   esac
 
+  local ARG=
   for ARG in "$@"; do
     case "$ARG" in
       '' ) continue;;
@@ -151,6 +140,33 @@ function sub_repos () {
   add_to_or_edit_gitignore --
   printf -- '%s\n' '' "${PAD//¦/8<}" "${ADD[@]}" "${PAD//¦/>8}" \
     >>.gitignore || return $?
+}
+
+
+function suggest_initial_ignores () {
+  echo '# Auto-generated files:'
+  local -A IGN=(
+    ['tmp.*']=+
+    )
+
+  local NM='node_modules'
+  [ -f package.json ] && IGN[$NM]=+
+  local PAR_DIR="$(dirname -- "$PWD")"
+  local PAR_DBN="$(basename -- "$PAR_DIR")"
+  case "$PAR_DBN" in
+    "$NM" ) IGN["$PAR_DBN"]=+;;
+  esac
+  local KEY= VAL="
+    $NM/
+    "
+  for VAL in $VAL; do
+    case "$VAL" in
+      */ ) [ -d "$VAL" ] && IGN["${VAL%/}"]=+;;
+      * ) [ -f "$VAL" ] && IGN["$VAL"]=+;;
+    esac
+  done
+
+  printf -- '/%s\n' "${!IGN[@]}" | sort --version-sort
 }
 
 
