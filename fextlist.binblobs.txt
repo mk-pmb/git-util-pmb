@@ -1,0 +1,61 @@
+# -*- coding: utf-8, tab-width: 2 -*-
+
+#=== Images ==============================
+avif jpeg jpg webp
+bmp gif png
+cpg dds
+cur ico ani
+heic hevc
+img
+kra xcf
+ora psd psp
+pbm pgm xbm xpm
+pcx tga tif tiff
+
+#=== Audio/Video ==============================
+wav aiff au snd     # uncompressed samples
+flac alac ape       # lossless codecs
+ogg ac3 aac m4a     # lossy compression in at least some modes
+mp2 mp3 mp4 mpeg mpg mpegts ts
+mid rmi sf2 sfz orc       # MIDI
+avi asf mka mkv mov ogm   # container formats
+caf wma wmv         # exotic vendor-specific proprietary stuff
+exr hdr
+akp amr exs dts gig       # not sure
+
+
+#=== Office documents ==============================
+odb odp ods odt     # Libre Office
+doc ppt xls         # MS Office classics
+docx pptx xlsx      # MS Office compressed
+mdb   # MS Access
+mpp   # MS Project Plan
+
+gnumeric
+pdf
+rtf
+
+#=== compiled machine code and similar ==============================
+bin elf so
+com dll exe pif
+
+#=== compressed/bundled files ==============================
+arj cpio rar
+deb
+jar
+min.js
+tar gz tgz
+xz
+zip
+
+
+
+
+
+
+
+
+
+
+
+#
