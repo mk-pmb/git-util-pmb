@@ -5,10 +5,13 @@
 function glc_main () {
   set -o pipefail
 
-  if tty --silent <&1; then
-    "$FUNCNAME" "$@" | pager $( (
-      man pager | grep -Pe '^\s*(-\w |)(or |)--quit-if-one-screen(\s|$)'
-    ) | grep -oPe '--\S+' )
+  local PAGER="$(which -- less more pager 2>/dev/null | grep -m 1 -Pe '^/')"
+  [ -z "$PAGER" ] || PAGER="$(basename -- "$PAGER")"
+  [ -z "$PAGER" ] || PAGER+=" $($PAGER --help 2>/dev/null |
+    grep -m 1 -oPe '(^|\s)--quit-if-one-screen(\s|$)' | grep -oPe '--\S+')"
+
+  if [ -n "$PAGER" ] && tty -s <&1; then
+    "$FUNCNAME" "$@" | $PAGER
     return $?
   fi
 
@@ -58,8 +61,8 @@ function glc_main () {
   LOG_LINES="$(glc_core "$@")" || return $?
 
   case "$OPT" in
-    --hoist ) log_sed '2s!  ! ⬐!;$s!   ! ⬊_!' <<<"$LOG_LINES";;
-    --bury )  log_sed '2s!   ! ⬈‾!;$s!   ! ⬑ !' <<<"$LOG_LINES";;
+    --hoist ) log_sed '2s!  ! ⬐!;$s!   ! ⬊_!';;
+    --bury )  log_sed '2s!   ! ⬈‾!;$s!   ! ⬑ !';;
     * );;
   esac
   echo "${LOG_LINES//$'\a'/}"
@@ -75,7 +78,7 @@ function glc_main () {
 
 
 function log_sed () {
-  LOG_LINES="$(sed -rf <(echo "$*") <<<"$LOG_LINES")"
+  LOG_LINES="$(echo "$LOG_LINES" | sed -re "$*")"
 }
 
 
@@ -90,7 +93,7 @@ function glc_core () {
     s~^(.{1,100}) *\t<author>~\1 ~
     s~ *\t<author>~ ~
     '
-  LANG=C git "$GIT_TASK" "${GIT_OPTS[@]}" "$@" | LANG=C sed -urf <(echo "$SED")
+  LANG=C git "$GIT_TASK" "${GIT_OPTS[@]}" "$@" | LANG=C sed -re "$SED"
   local RV="${PIPESTATUS[*]}"
   let RV="${RV// /+}"
   return "$RV"
@@ -98,7 +101,7 @@ function glc_core () {
 
 
 function glc_summarize_commit_hashes () {
-  local HASHES="$(<<<"$LOG_LINES" cut -d $'\a' -sf 2- | cut -d ' ' -sf 1)"
+  local HASHES="$(echo "$LOG_LINES" | cut -d $'\a' -sf 2- | cut -d ' ' -sf 1)"
   HASHES="${HASHES//$'\n'/ }"
   local BASE="${HASHES%% *}"
   local LATEST="${HASHES##* }"
