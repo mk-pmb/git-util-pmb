@@ -17,10 +17,14 @@ function whatsup_cli_main () {
     )
 
   local SEDFMT="$SELFPATH/fmt.|.sed"
+  local BIN_BLOB_FEXTS="$(<"$SELFPATH"/fextlist.binblobs.txt \
+    cut -d '#' -f 1 | grep -oPe '\S+' | LANG=C sort -Vu
+    )" # \n as item separator is easy to replace b/c there's none at the end.
 
   local IMPORTANT_HINTS=()
   maybe_warn_broken_basic_programs || return $?
   maybe_warn_gitfile || return $?
+  maybe_warn_gitattributes_bin_blobs || return $?
 
   ( print_important_hints
     [ -d "$GIT_TOPLEVEL" ] || return 4
@@ -88,6 +92,30 @@ function maybe_warn_gitfile__check_fstype () {
   esac
   imphint "$MSG"
 }
+
+
+function maybe_warn_gitattributes_bin_blobs () {
+  [ -d "$GIT_TOPLEVEL" ] || return 4
+  local FEXTS_RGX='.(?:'"${BIN_BLOB_FEXTS//$'\n'/|}"')'
+  # no \ here -----^--- b/c it will be added next:
+  FEXTS_RGX="${FEXTS_RGX//./'\.'}"
+  local FOUND="$(git status --porcelain -uall |
+    grep -oPe "$FEXTS_RGX"'$' | LANG=C sort -u)"
+  [ -n "$FOUND" ] || return 0
+  local GAT="$(git rev-parse --show-cdup).gitattributes"
+  local ALREADY="$( [ ! -f "$GAT" ] || grep -hPe '\s-text(\s|$)' -- "$GAT" |
+    grep -oPe '^\*'"$FEXTS_RGX"'\s' | cut -d . -f 2- | tr -d ' \t')"
+  FOUND="$(echo "$FOUND" | cut -b 2- | grep -vxFe "${ALREADY:-/}" |
+    LANG=C sort -u)"
+  [ -n "$FOUND" ] || return 0
+  imphint 'W: Avoid diff on binary blobs:' \
+    ">>$GAT printf -- '*.%s -text\n' ${FOUND//$'\n'/ }"
+}
+
+
+
+
+
 
 
 
