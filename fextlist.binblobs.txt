@@ -1,6 +1,6 @@
 # -*- coding: utf-8, tab-width: 2 -*-
 
-#=== Images ==============================
+#=== Graphics ==============================
 avif jpeg jpg webp
 bmp gif png
 cpg dds
@@ -11,6 +11,7 @@ kra xcf
 ora psd psp
 pbm pgm xbm xpm
 pcx tga tif tiff
+
 
 #=== Audio/Video ==============================
 wav aiff au snd     # uncompressed samples
@@ -35,18 +36,20 @@ gnumeric
 pdf
 rtf
 
+
 #=== compiled machine code and similar ==============================
 bin elf so
 com dll exe pif
 
+
 #=== compressed/bundled files ==============================
+7z xz zip
 arj cpio rar
 deb
+iso
 jar
 min.js
 tar gz tgz
-xz
-zip
 
 
 
