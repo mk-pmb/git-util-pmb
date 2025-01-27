@@ -56,15 +56,21 @@ function add_to_or_edit_gitignore () {
     [01]: ) "${VISUAL:-true}" "$IGN_FN"; return $?;;
   esac
 
-  local ARG=
-  for ARG in "$@"; do
-    case "$ARG" in
+  local VAL=
+  while [ "$#" -ge 1 ]; do
+    VAL="$1"; shift
+    case "$VAL" in
       '' ) continue;;
       -- ) continue;;
     esac
-    ARG="/$ARG"
-    [[ "$HAD" == *$'\n'"$ARG"$'\n'* ]] && continue
-    echo "$ARG" >>"$IGN_FN" || return $?
+
+    VAL="${VAL%/}"
+    # ^-- Your ignore should not care whether the ignored thing is a real
+    #     directory or a symlink to one.
+
+    VAL="/$VAL"
+    [[ "$HAD" == *$'\n'"$VAL"$'\n'* ]] && continue
+    echo "$VAL" >>"$IGN_FN" || return $?
   done
 }
 
@@ -166,7 +172,9 @@ function suggest_initial_ignores () {
     esac
   done
 
-  printf -- '/%s\n' "${!IGN[@]}" | sort --version-sort
+  VAL="$(printf -- '/%s\n' "${!IGN[@]}" | sort --version-sort)"
+  HAD+=$'\n'"$VAL"$'\n'
+  echo "$VAL"
 }
 
 
