@@ -28,7 +28,7 @@ function whatsup_cli_main () {
 
   ( print_important_hints
     [ -d "$GIT_TOPLEVEL" ] || return 4
-    git branch -v
+    git branch -v | "${SEDFMT//|/colorize_branches_list}"
     git-log-concise -n 3 | cut -b 1-$(( $COLUMNS - 1 )) |
       "${SEDFMT//|/colorize_concise_log}"
     git "${GIT_STATUS_OPTS[@]}" status "${GIT_STATUS_ARGS[@]}" |
