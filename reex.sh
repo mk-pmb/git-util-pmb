@@ -2,7 +2,7 @@
 # -*- coding: utf-8, tab-width: 2 -*-
 
 
-function hard_reset_experimental () {
+function reex_cli_init () {
   export LANG{,UAGE}=en_US.UTF-8  # make error messages search engine-friendly
   local LOCAL_BRANCH="${1:-experimental}"; shift
   local RMT="${1:-origin}"; shift
@@ -40,4 +40,4 @@ function hard_reset_experimental () {
 }
 
 
-hard_reset_experimental "$@"; exit $?
+reex_cli_init "$@"; exit $?
