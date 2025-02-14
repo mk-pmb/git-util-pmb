@@ -4,6 +4,7 @@
 
 function reex_cli_init () {
   export LANG{,UAGE}=en_US.UTF-8  # make error messages search engine-friendly
+  local DBGLV="${DEBUGLEVEL:-0}"
   local LOCAL_BRANCH="${1:-experimental}"; shift
   local RMT="${1:-origin}"; shift
 
@@ -15,7 +16,8 @@ function reex_cli_init () {
 
   local REPO_DIR="$(git rev-parse --show-toplevel)"
   [ -d "$REPO_DIR" ] || return 2$(echo E: 'Failed to find git work tree!' >&2)
-  cd -- "$REPO_DIR"
+  cd -- "$REPO_DIR" || return 2$(
+    echo E: "Failed (rv=$?) to chdir to the git work tree!" >&2)
 
   local OWNER= SUDO=
   if stat --help 2>&1 | grep -qPe ' -c[, ]'; then
@@ -26,11 +28,10 @@ function reex_cli_init () {
   [ "${DEBUGLEVEL:-0}" -lt 2 ] || SUDO="echo X: $SUDO"
 
   reex_check_device
-  $SUDO git stash
-  echo "D: fetch: $(git remote -v | grep -Pe "^$RMT\s" | grep -vFe '(push)')"
-  $SUDO git fetch "$RMT"
-  echo D: checkout:
-  $SUDO git checkout -b "$LOCAL_BRANCH" 2>/dev/null || true
+  reex_vsudo_git stash
+  reex_vsudo_git fetch "$RMT"
+  reex_vsudo_git checkout -b "$LOCAL_BRANCH" \
+    2>/dev/null || true
   echo
   echo 'Relevant part starts here.' \
     'Ideally it should say "HEAD is now at" + relevant result.'
@@ -53,6 +54,23 @@ function reex_check_device () {
         "Set environment variable REEX_ANY_DEVICE='$PWD' to ignore."  >&2
       return 4;;
   esac
+}
+
+
+function reex_vsudo_git () {
+  local ACTION="$1"; shift
+  # echo -n D: "$ACTION"
+  local DESCR=
+  if [ "$#" -ge 1 ]; then
+    DESCR=" $*"
+    case "$ACTION" in
+      fetch )
+        DESCR=": $(git remote -v | grep -Pe "^$1\s" | grep -vFe '(push)')";;
+    esac
+  fi
+  # echo "$DESCR"
+  $SUDO git "$ACTION" "$@" || return $?$(
+    echo E: "Failed (rv=$?) to git $ACTION$DESCR" >&2)
 }
 
 
