@@ -25,6 +25,7 @@ function reex_cli_init () {
   fi
   [ "${DEBUGLEVEL:-0}" -lt 2 ] || SUDO="echo X: $SUDO"
 
+  reex_check_device
   $SUDO git stash
   echo "D: fetch: $(git remote -v | grep -Pe "^$RMT\s" | grep -vFe '(push)')"
   $SUDO git fetch "$RMT"
@@ -38,6 +39,32 @@ function reex_cli_init () {
     $s~$~\n~'
   $SUDO git reset --hard "$RMT/$REMOTE_BRANCH"
 }
+
+
+function reex_check_device () {
+  [ "$REEX_ANY_DEVICE" == "$PWD" ] && return 0 || true
+  local DEVICE="$(df -P . | sed -re '1d;s~^(\S+)\s.*\s(\S+)$~\1 @ \2~')"
+  DEVICE="${DEVICE//$'\n'/¶}"
+  case "$DEVICE" in
+    /dev/* ) ;;
+    * )
+      echo E: 'Flinching from operating on a filesystem on device' \
+        "'$DEVICE' which may or may not be a network file system." \
+        "Set environment variable REEX_ANY_DEVICE='$PWD' to ignore."  >&2
+      return 4;;
+  esac
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 reex_cli_init "$@"; exit $?
