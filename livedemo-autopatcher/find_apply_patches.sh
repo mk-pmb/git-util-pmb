@@ -18,7 +18,7 @@ function find_apply_patches () {
     )
   readarray -t TODO < <( # @2025-02-11 man bash: Array will be cleared.
     find "${TODO[@]}" | LANG=C sort -V | cut -sf 2-)
-  local DONE=0
+  local N_DONE=0
 
   local PATCH_FILE= PATCH_TITLE= PATCH_RV=
   [ -n "$AUTOCOMMIT_PREFIX" ] || AUTOCOMMIT_PREFIX='Live demo patch: '
@@ -68,9 +68,9 @@ function find_apply_patches () {
 
     [ "$PATCH_RV" == 0 ] || return "$PATCH_RV"$(
       echo E: "Patch step failed (rv=$PATCH_RV): $PATCH_TITLE" >&2)
-    (( DONE += 1 ))
+    (( N_DONE += 1 ))
   done
-  echo "# Done, $DONE patch steps have been applied."
+  echo "# Done, $N_DONE patch steps have been applied."
 }
 
 
