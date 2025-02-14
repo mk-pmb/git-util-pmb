@@ -20,6 +20,7 @@ function find_apply_patches () {
     find "${TODO[@]}" | LANG=C sort -V | cut -sf 2-)
   local N_DONE=0
 
+  local PATCH_START_UTS="$EPOCHSECONDS"
   local PATCH_FILE= PATCH_TITLE= PATCH_RV=
   [ -n "$AUTOCOMMIT_PREFIX" ] || AUTOCOMMIT_PREFIX='Live demo patch: '
 
@@ -70,7 +71,9 @@ function find_apply_patches () {
       echo E: "Patch step failed (rv=$PATCH_RV): $PATCH_TITLE" >&2)
     (( N_DONE += 1 ))
   done
-  echo "# Done, $N_DONE patch steps have been applied."
+  local PATCH_DONE_UTS="$EPOCHSECONDS" DURA_SEC=
+  (( DURA_SEC = PATCH_DONE_UTS - PATCH_START_UTS ))
+  echo "# Done, $N_DONE patch steps have been applied in $DURA_SEC sec."
 }
 
 
