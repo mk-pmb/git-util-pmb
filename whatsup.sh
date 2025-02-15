@@ -108,8 +108,12 @@ function maybe_warn_gitattributes_bin_blobs () {
   FOUND="$(echo "$FOUND" | cut -b 2- | grep -vxFe "${ALREADY:-/}" |
     LANG=C sort -u)"
   [ -n "$FOUND" ] || return 0
-  imphint 'W: Avoid diff on binary blobs:' \
-    ">>$GAT printf -- '*.%s -text\n' ${FOUND//$'\n'/ }"
+
+  local MSG='W: Avoid diff on binary blobs'
+  git branch | grep -qxPe '. git-annex' &&
+    MSG+=' (independent of whether they are just symlinks)'
+  MSG+=": >>$GAT printf -- '*.%s -text\n' ${FOUND//$'\n'/ }"
+  imphint "$MSG"
 }
 
 
