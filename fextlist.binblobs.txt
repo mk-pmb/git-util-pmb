@@ -51,6 +51,13 @@ jar
 min.js
 tar gz tgz
 
+#=== cryptographic keys and certificates ==============================
+cert
+pem
+ppk
+rsa-prv
+rsa-pub
+
 
 
 
