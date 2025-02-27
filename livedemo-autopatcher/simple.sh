@@ -65,6 +65,9 @@ function ldap_simple_cli_init () {
   done
   VAL=
 
+  [ "$#" == 0 ] || return 4$(
+    echo E: "Unsupported CLI argument(s):$(printf -- ' ‹%s›' "$@")" >&2)
+
   cfgdf git_remote origin
   cfgdf live_worktree ..
   # cfgdf live_ref # nope: see ldap_simple_guess_ref_if_empty below
