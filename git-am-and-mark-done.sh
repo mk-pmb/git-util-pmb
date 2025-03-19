@@ -108,7 +108,7 @@ function am_and_mark_done__one () {
 
 function find_patch_header_value () {
   # args: header_name_lowercase patch_file
-  local VAL="$(sed -nre 's~\s+$~~; /^$/q; s~'"$1:"'\s+~~ip' -- "$2")"
+  local VAL="$(sed -nre 's~\s+$~~; /^$/q; s~'^"$1:"'\s+~~ip' -- "$2")"
   case "$VAL" in
     '' ) echo "E: Cannot find any '$1:' header in patch: $2" >&2;;
     *$'\n'* ) echo "E: Found too many '$1:' headers in patch: $2" >&2;;
