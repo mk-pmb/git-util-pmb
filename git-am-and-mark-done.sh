@@ -9,16 +9,19 @@ function am_and_mark_done () {
     [health-check]=
     [limit]=
     [am-flags]=
+    [time-travel]='flinch-if-impersonating'
     )
   local PATCH_FILES_TODO=()
   local ARG=
   local N_DONE=0
+  local SECONDS_PER_DAY=86400
   while [ "$#" -ge 1 ]; do
     ARG="$1"; shift
     case "$ARG" in
       '' ) continue;;
       -d ) ARG='--committer-date-is-author-date';;
       -F ) ARG='--fully-impersonate-all-authors';;
+      -T ) ARG='--time-travel=ignore';;
     esac
     case "$ARG" in
       --committer-date-is-author-date | \
@@ -29,6 +32,7 @@ function am_and_mark_done () {
 
       --health-check=* | \
       --limit=* | \
+      --time-travel=* | \
       '' )
         ARG="${ARG#--}"
         CFG["${ARG%%=*}"]="${ARG#*=}"
@@ -45,6 +49,9 @@ function am_and_mark_done () {
       * ) set -- "$ARG"*.patch "$@";;
     esac
   done
+
+  check_time_travel || return $?
+  [ "${CFG[time-travel]}" == 'check' ] && return 0
 
   for ARG in "${PATCH_FILES_TODO[@]}"; do
     am_and_mark_done__one "$ARG" || return $?
@@ -148,6 +155,84 @@ function decode_want_subj () {
   esac
   WANT_SUBJ="$DECODED"
 }
+
+
+function check_time_travel () {
+  local TT_MODE="${CFG[time-travel]}"
+  case "$TT_MODE" in
+    *-if-impersonating )
+      [ -n "${CFG[fully-impersonate-all-authors]}" ] || return 0
+      TT_MODE="${TT_MODE%-if-*}";;
+  esac
+  case "$TT_MODE" in
+    accept | ignore ) return 0;;
+    check | validate | flinch ) ;;
+    * )
+      echo E: $FUNCNAME: "Unsupported setting: --time-travel='$TT_MODE'" >&2
+      return 4;;
+  esac
+  set -- "${PATCH_FILES_TODO[@]}"
+  local PREV_UTS=0 TT_PREV_NAME='(improbably old HEAD commit)'
+  local KEY= VAL=
+  for KEY in commit author ; do
+    VAL="$(git show --no-patch --format=%${KEY:0:1}t HEAD)"
+    [ "${VAL:-0}" -ge 1 ] || return 4$(
+      echo E: $FUNCNAME: "Unable to find HEAD $KEY date: '$VAL'" >&2)
+    [ "$VAL" -gt "$PREV_UTS" ] || continue
+    PREV_UTS="$VAL"
+    TT_PREV_NAME="(HEAD $KEY date)"
+  done
+
+  local TT_NAME_MAXLEN=20
+  local TT_FILES=()
+  while [ "$#" -ge 1 ]; do
+    check_time_travel__one_patch "$1" || return $?
+    shift
+  done
+
+  [ "${#TT_FILES[@]}" -ge 1 ] || return 0
+  echo E: 'Flinching from backwards time travel without option' \
+    '--time-travel=ignore.' >&2
+  return 4
+}
+
+
+function check_time_travel__one_patch () {
+  local SRC="$1"
+  local PATCH_DATE="$(find_patch_header_value Date "$SRC")"
+  [ -n "$PATCH_DATE" ] || return 4$(echo E: $FUNCNAME: >&2 \
+    "Unable to detect patch date in '$SRC'")
+  local PATCH_UTS="$(date +%s -d "$PATCH_DATE")"
+  [ "${PATCH_UTS:-0}" -ge 1 ] || return 4$(echo E: $FUNCNAME: >&2 \
+    "Unable to parse patch date '$PATCH_DATE' in '$SRC'")
+
+  local DELTA_SEC=$(( PREV_UTS - PATCH_UTS ))
+  # ^-- e.g. patch at UTS 30, but previous at 40 = 10 seconds backwards TT.
+
+  [ "${#SRC}" -le "$TT_NAME_MAXLEN" ] || SRC="${SRC:0:$TT_NAME_MAXLEN}…"
+  local DELTA_HR="${DELTA_SEC#-}" DAYS=
+  (( DAYS = DELTA_HR / SECONDS_PER_DAY ))
+  if [ "$DAYS" == 0 ]; then DAYS=; else DAYS+='d+'; fi
+  DELTA_HR="$DAYS$(TZ=UTC printf -- '%(%T)T' "$DELTA_HR")"
+
+  if [ "$DELTA_SEC" -gt 0 ]; then
+    echo W: "Backwards time travel: Date '$PATCH_DATE' in '$SRC'" \
+      "is $DELTA_HR before '$TT_PREV_NAME'!" >&2
+    TT_FILES+=( "$SRC" )
+  elif [ "$TT_MODE" == validate ]; then
+    echo D: "ok: '$SRC' is $DELTA_HR after '$TT_PREV_NAME'."
+  fi
+  PREV_UTS="$PATCH_UTS"
+  TT_PREV_NAME="$SRC"
+}
+
+
+
+
+
+
+
+
 
 
 
