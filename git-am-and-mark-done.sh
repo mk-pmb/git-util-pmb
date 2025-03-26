@@ -5,16 +5,16 @@
 function am_and_mark_done () {
   export LANG{,UAGE}=en_US.UTF-8  # make error messages search engine-friendly
 
-  local TODO=( "$@" )
   local -A CFG=(
     [health-check]=
     [limit]=
     [am-flags]=
     )
+  local PATCH_FILES_TODO=()
   local ARG=
   local N_DONE=0
-  while [ "${#TODO[@]}" -ge 1 ]; do
-    ARG="${TODO[0]}"; TODO=( "${TODO[@]:1}" )
+  while [ "$#" -ge 1 ]; do
+    ARG="$1"; shift
     case "$ARG" in
       '' ) continue;;
       -d ) ARG='--committer-date-is-author-date';;
@@ -39,23 +39,25 @@ function am_and_mark_done () {
         continue;;
 
       -* ) echo "E: Unsupported option: $ARG" >&2; return 4;;
+      *.patch )
+        [ -f "$ARG" ] || return 4$(echo "E: not a regular file: $ARG" >&2)
+        PATCH_FILES_TODO+=( "$ARG" );;
+      * ) set -- "$ARG"*.patch "$@";;
     esac
+  done
+
+  for ARG in "${PATCH_FILES_TODO[@]}"; do
     am_and_mark_done__one "$ARG" || return $?
   done
+
   [ "$N_DONE" -ge 1 ] || return 4$(echo "E: No filenames or prefixes given" >&2)
 }
 
 
 function am_and_mark_done__one () {
   local SRC="$1"
-  case "$SRC" in
-    *.patch ) ;;
-    * ) TODO+=( "$SRC"*.patch ); return 0;;
-  esac
-  [ -f "$SRC" ] || return 4$(echo "E: not a regular file: $SRC" >&2)
   [ -z "${CFG[limit]}" ] || [ "$N_DONE" -lt "${CFG[limit]}" ] || return 3$(
     echo "E: Flinching from processing file due to --limit option: $SRC" >&2)
-
   local WANT_SUBJ="$(git-find-commit-titles-in-patch-file -- "$SRC")"
   case "$WANT_SUBJ" in
     '' ) echo "E: Failed to detect commit title in patch: $SRC" >&2; return 4;;
