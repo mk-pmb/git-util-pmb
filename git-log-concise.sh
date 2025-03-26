@@ -21,6 +21,7 @@ function glc_main () {
   esac
 
   local COLS=(
+    '%at</uts>'
     '%aD</wkd>'
     # ^-- The only easy way to get the weekday from git v2.25.1 log
     ' '
@@ -41,6 +42,7 @@ function glc_main () {
       shift;;
   esac
 
+  local GIT_LOG_REVERSE=
   local GIT_OPTS=(
     --pretty="$(printf -- '%s' "${COLS[@]}")"
     --date=local
@@ -51,7 +53,8 @@ function glc_main () {
     --bury | \
     --hoist | \
     --redo )
-      GIT_OPTS+=( --reverse -n )
+      GIT_OPTS+=( -n )
+      GIT_LOG_REVERSE='--reverse'
       shift;;
   esac
 
@@ -84,6 +87,8 @@ function log_sed () {
 
 function glc_core () {
   local SED='
+    # We no longer need the unix timestamp:
+    s~^[0-9]+</uts>~~
     # From first date, we only want the weekday:
     s~,[^<>]*</wkd>~~
     # Kill seconds and timezone:
@@ -92,11 +97,41 @@ function glc_core () {
     s~\t<author>~                                                           &~
     s~^(.{1,100}) *\t<author>~\1 ~
     s~ *\t<author>~ ~
+    s~\a<time-travel>([^<>]+)</time-travel>|$\
+      ~\x1B[7m !! time travel: \1 !! \x1B[0m~
     '
-  LANG=C git "$GIT_TASK" "${GIT_OPTS[@]}" "$@" | LANG=C sed -re "$SED"
+  LANG=C git "$GIT_TASK" $GIT_LOG_REVERSE "${GIT_OPTS[@]}" "$@" |
+    glc_detect_timetravel |
+    LANG=C sed -re "$SED"
   local RV="${PIPESTATUS[*]}"
   let RV="${RV// /+}"
   return "$RV"
+}
+
+
+function glc_detect_timetravel () {
+  local LN= PREV_UTS= UTS= SECONDS_PER_DAY=86400
+  while IFS= read -r LN; do
+    UTS="${LN%%'</uts>'*}"
+    LN="${LN#*'</uts>'}"
+    glc_detect_timetravel__check || return $?
+    echo "$LN"
+    PREV_UTS="$UTS"
+  done
+}
+
+
+function glc_detect_timetravel__check () {
+  [ -n "$PREV_UTS" ] || return 0
+  local DELTA_SEC= DELTA_DAYS=
+  (( DELTA_SEC = UTS - PREV_UTS ))
+  [ -z "$GIT_LOG_REVERSE" ] || (( DELTA_SEC = -DELTA_SEC ))
+  [ "$DELTA_SEC" -ge 1 ] || return 0
+  LN+=$'\t\a'"<time-travel>"
+  (( DELTA_DAYS = DELTA_SEC / SECONDS_PER_DAY ))
+  [ "$DELTA_DAYS" == 0 ] || LN+="${DELTA_DAYS}d+"
+  LN+="$(TZ=UTC printf -- '%(%T)T' "$DELTA_SEC")"
+  LN+='</time-travel>'
 }
 
 
