@@ -118,12 +118,28 @@ function am_and_mark_done__one () {
 function find_patch_header_value () {
   # args: header_name_lowercase patch_file
   local VAL="$(sed -nre 's~\s+$~~; /^$/q; s~'^"$1:"'\s+~~ip' -- "$2")"
-  case "$VAL" in
-    '' ) echo "E: Cannot find any '$1:' header in patch: $2" >&2;;
-    *$'\n'* ) echo "E: Found too many '$1:' headers in patch: $2" >&2;;
-    * ) echo "$VAL"; return 0;;
-  esac
-  return 4
+  local TRACE="in patch: $2"
+  [ -n "$VAL" ] || return 4$(echo E: >&2 \
+    "Cannot find any '$1:' header $TRACE")
+  [[ "$VAL" != *$'\n'* ]] || return 4$(echo E: >&2 \
+    "Found too many '$1:' headers $TRACE")
+
+  local ORIG="${VAL##* }"
+  [[ "$ORIG" == [+-][0-9][0-9][0-9][0-9] ]] || return 4$(echo E: >&2 \
+    "Time zone must be a 4-digit signed number $TRACE")
+  local WANT="$(date +%z -d "${VAL% *}")"
+  [ "$ORIG" == "$WANT" ] || return 4$(echo E: >&2 \
+    "Time zone was given as '$ORIG' but date gives '$WANT' $TRACE")
+
+  ORIG="${VAL%%[ ,]*}"
+  WANT="${VAL% *}"
+  WANT="${VAL#* }"
+  WANT="$(date -Rd "$WANT")"
+  WANT="${WANT%%[ ,]*}"
+  [ "$ORIG" == "$WANT" ] || return 4$(echo E: >&2 \
+    "Day of week was given as '$ORIG' but date gives '$WANT' $TRACE")
+
+  echo "$VAL"
 }
 
 
