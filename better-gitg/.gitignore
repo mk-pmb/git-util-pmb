@@ -1,0 +1,13 @@
+
+# Sub-repos:
+/repo
+/repo/.git #src=https://gitlab.gnome.org/GNOME/gitg.git
+
+
+
+# Auto-generated files:
+/tmp.*
+
+
+
+# Unsorted stuff (this section should be empty):
