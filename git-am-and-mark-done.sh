@@ -51,7 +51,9 @@ function am_and_mark_done () {
   done
 
   check_time_travel || return $?
-  [ "${CFG[time-travel]}" == 'check' ] && return 0
+  case "${CFG[time-travel]}" in
+    check | validate ) return 0;;
+  esac
 
   for ARG in "${PATCH_FILES_TODO[@]}"; do
     am_and_mark_done__one "$ARG" || return $?
