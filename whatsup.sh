@@ -99,6 +99,10 @@ function maybe_warn_gitattributes_bin_blobs () {
   local FEXTS_RGX='.(?:'"${BIN_BLOB_FEXTS//$'\n'/|}"')'
   # no \ here -----^--- b/c it will be added next:
   FEXTS_RGX="${FEXTS_RGX//./'\.'}"
+
+  # Now add all-uppercase variants (for legacy DOS/windows projects):
+  FEXTS_RGX="$FEXTS_RGX|${FEXTS_RGX^^}"
+
   local FOUND="$(git status --porcelain -uall |
     grep -oPe "$FEXTS_RGX"'$' | LANG=C sort -u)"
   [ -n "$FOUND" ] || return 0
