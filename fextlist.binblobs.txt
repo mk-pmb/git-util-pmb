@@ -14,19 +14,22 @@ pcx tga tif tiff
 
 
 #=== Audio/Video ==============================
-wav aiff au snd     # uncompressed samples
 flac alac ape       # lossless codecs
-ogg ac3 aac m4a     # lossy compression in at least some modes
-mp2 mp3 mp4 mpeg mpg mpegts ts
 mid rmi sf2 sfz orc       # MIDI
+mp2 mp3 mp4 mpeg mpg mpegts ts
+ogg ac3 aac m4a     # lossy compression in at least some modes
+wav aiff au snd     # uncompressed samples
+
 avi asf mka mkv mov ogm   # container formats
 caf wma wmv         # exotic vendor-specific proprietary stuff
 exr hdr
+
 akp amr exs dts gig       # not sure
 
 
 #=== Office documents ==============================
 odb odp ods odt     # Libre Office
+
 doc ppt xls         # MS Office classics
 docx pptx xlsx      # MS Office compressed
 mdb   # MS Access
