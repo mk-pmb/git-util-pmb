@@ -104,7 +104,7 @@ function maybe_warn_gitattributes_bin_blobs () {
   FEXTS_RGX="$FEXTS_RGX|${FEXTS_RGX^^}"
 
   local FOUND="$(git status --porcelain -uall |
-    grep -oPe "$FEXTS_RGX"'$' | LANG=C sort -u)"
+    grep -oPe "($FEXTS_RGX)"'$' | LANG=C sort -u)"
   [ -n "$FOUND" ] || return 0
   local GAT="$(git rev-parse --show-cdup).gitattributes"
   local ALREADY="$( [ ! -f "$GAT" ] || grep -hPe '\s-text(\s|$)' -- "$GAT" |
