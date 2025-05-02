@@ -10,6 +10,7 @@ function am_and_mark_done () {
     [limit]=
     [am-flags]=
     [time-travel]='flinch-if-impersonating'
+    [colorize]=
     )
   local PATCH_FILES_TODO=()
   local ARG=
@@ -22,6 +23,7 @@ function am_and_mark_done () {
       -d ) ARG='--committer-date-is-author-date';;
       -F ) ARG='--fully-impersonate-all-authors';;
       -T ) ARG='--time-travel=ignore';;
+      -C ) ARG='--colorize=always';;
     esac
     case "$ARG" in
       --committer-date-is-author-date | \
@@ -30,6 +32,7 @@ function am_and_mark_done () {
       --fully-impersonate-all-authors | \
       '' ) CFG["${ARG#--}"]=+; continue;;
 
+      --colorize=* | \
       --health-check=* | \
       --limit=* | \
       --time-travel=* | \
@@ -49,6 +52,11 @@ function am_and_mark_done () {
       * ) set -- "$ARG"*.patch "$@";;
     esac
   done
+
+  case "${CFG[colorize]}" in
+    '' | auto ) CFG[colorize]='auto-yes'; tty --silent <&1 || CFG[colorize]=;;
+    false | never | no ) CFG[colorize]=;;
+  esac
 
   check_time_travel || return $?
   case "${CFG[time-travel]}" in
@@ -262,11 +270,19 @@ function check_time_travel__tabulate () {
   esac
   local NEG="${DELTA_SEC:0:1}"
   [ "$NEG" == '-' ] || NEG=
+
+  [ -z "$NEG" -o -z "${CFG[colorize]}" ] || echo -n $'\x1B[91m'
+  # ^-- Using a background color would be ugly because some terminals
+  #   won't apply it to the gaps created by tabulators.
+
+  [ -z "$NEG" ] || echo -n "$C_BAD"
   printf -- '%-31s\t' "$PATCH_DATE"   # usually 31 chars
   printf -- '% 11d\t' "$DELTA_SEC"
   # 10 digits are sufficient for max 32-bit UTS, +1 for sign
   printf -- '% 16s%s\t' "${NEG:-+}$DELTA_HR" "${NEG:+  !!}"
-  echo "$SRC"
+  echo -n "$SRC"
+  [ -z "$NEG" -o -z "${CFG[colorize]}" ] || echo -n $'\x1B[0m'
+  echo
 }
 
 
