@@ -96,15 +96,16 @@ function maybe_warn_gitfile__check_fstype () {
 
 function maybe_warn_gitattributes_bin_blobs () {
   [ -d "$GIT_TOPLEVEL" ] || return 4
-  local FEXTS_RGX='.(?:'"${BIN_BLOB_FEXTS//$'\n'/|}"')'
-  # no \ here -----^--- b/c it will be added next:
+  local FEXTS_RGX="$BIN_BLOB_FEXTS"
+  FEXTS_RGX="${FEXTS_RGX//$'\n'/|}"
   FEXTS_RGX="${FEXTS_RGX//./'\.'}"
-
-  # Now add all-uppercase variants (for legacy DOS/windows projects):
+  # Add all-uppercase variants (for legacy DOS/windows projects):
   FEXTS_RGX="$FEXTS_RGX|${FEXTS_RGX^^}"
+  # Finally, add a big group around the actual fexts and the dot in front:
+  FEXTS_RGX='\.(?:'"$FEXTS_RGX"')'
 
   local FOUND="$(git status --porcelain -uall |
-    grep -oPe "($FEXTS_RGX)"'$' | LANG=C sort -u)"
+    grep -oPe "$FEXTS_RGX"'$' | LANG=C sort -u)"
   [ -n "$FOUND" ] || return 0
   local GAT="$(git rev-parse --show-cdup).gitattributes"
   local ALREADY="$( [ ! -f "$GAT" ] || grep -hPe '\s-text(\s|$)' -- "$GAT" |
