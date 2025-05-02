@@ -58,23 +58,37 @@ function am_and_mark_done () {
     false | never | no ) CFG[colorize]=;;
   esac
 
+  local N_ORIG_TODO="${#PATCH_FILES_TODO[@]}" FIRST_OVER_LIMIT=
+  [ "${CFG[limit]:-0}" -lt "$N_ORIG_TODO" ] || CFG[limit]=
+  if [ -n "${CFG[limit]}" ]; then
+    FIRST_OVER_LIMIT="${PATCH_FILES_TODO[${CFG[limit]}]}"
+    PATCH_FILES_TODO=( "${PATCH_FILES_TODO[@]:0:${CFG[limit]}}" )
+  fi
+  limited_todo_core || return $?
+  [ -z "$FIRST_OVER_LIMIT" ] || return 3$(echo E: >&2 \
+    "Flinched from processing file due to --limit option: $FIRST_OVER_LIMIT")
+}
+
+
+
+function limited_todo_core () {
   check_time_travel || return $?
   case "${CFG[time-travel]}" in
     check | validate ) return 0;;
   esac
 
-  for ARG in "${PATCH_FILES_TODO[@]}"; do
-    am_and_mark_done__one "$ARG" || return $?
-  done
+  with_each_patch_file am_and_mark_done__one || return $?
+}
 
-  [ "$N_DONE" -ge 1 ] || return 4$(echo "E: No filenames or prefixes given" >&2)
+
+function with_each_patch_file () {
+  for SRC in "${PATCH_FILES_TODO[@]}"; do
+    "$@" || return $?
+  done
 }
 
 
 function am_and_mark_done__one () {
-  local SRC="$1"
-  [ -z "${CFG[limit]}" ] || [ "$N_DONE" -lt "${CFG[limit]}" ] || return 3$(
-    echo "E: Flinching from processing file due to --limit option: $SRC" >&2)
   local WANT_SUBJ="$(git-find-commit-titles-in-patch-file -- "$SRC")"
   case "$WANT_SUBJ" in
     '' ) echo "E: Failed to detect commit title in patch: $SRC" >&2; return 4;;
@@ -121,7 +135,6 @@ function am_and_mark_done__one () {
 
   health_check_now "after patch $SRC" || return $?
   mv --verbose --no-target-directory -- "$SRC"{,ed} || return $?
-  (( N_DONE += 1 ))
 }
 
 
@@ -203,7 +216,6 @@ function check_time_travel () {
       echo E: $FUNCNAME: "Unsupported setting: --time-travel='$TT_MODE'" >&2
       return 4;;
   esac
-  set -- "${PATCH_FILES_TODO[@]}"
   local PREV_UTS=0 TT_PREV_NAME='(improbably old HEAD commit)'
   local KEY= VAL= PATCH_DATE=
   for KEY in commit author ; do
@@ -222,10 +234,7 @@ function check_time_travel () {
 
   local TT_NAME_MAXLEN=20
   local TT_FILES=()
-  while [ "$#" -ge 1 ]; do
-    check_time_travel__one_patch "$1" || return $?
-    shift
-  done
+  with_each_patch_file check_time_travel__one_patch || return $?
 
   [ "${#TT_FILES[@]}" -ge 1 ] || return 0
   echo E: 'Flinching from backwards time travel without option' \
@@ -235,7 +244,6 @@ function check_time_travel () {
 
 
 function check_time_travel__one_patch () {
-  local SRC="$1"
   local PATCH_DATE="$(find_patch_header_date Date "$SRC")"
   [ -n "$PATCH_DATE" ] || return 4$(echo E: $FUNCNAME: >&2 \
     "Unable to detect patch date in '$SRC'")
