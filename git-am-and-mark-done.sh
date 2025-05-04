@@ -216,16 +216,16 @@ function check_time_travel () {
       echo E: $FUNCNAME: "Unsupported setting: --time-travel='$TT_MODE'" >&2
       return 4;;
   esac
-  local PREV_UTS=0 TT_PREV_NAME='(improbably old HEAD commit)'
-  local KEY= VAL= PATCH_DATE=
+  local PREV_UTS=0 TT_PREV_NAME='(improbably old HEAD commit)' TT_PREV_DATE=
+  local KEY= VAL=
   for KEY in commit author ; do
     VAL="$(git show --no-patch --format=%${KEY:0:1}t:%${KEY:0:1}D HEAD)"
     VAL="${VAL:-0}"
     [ "${VAL%%:*}" -ge 1 ] || return 4$(
       echo E: $FUNCNAME: "Unable to find HEAD $KEY date: '$VAL'" >&2)
     [ "${VAL%%:*}" -gt "$PREV_UTS" ] || continue
-    PATCH_DATE="${VAL#*:}"
     PREV_UTS="${VAL%%:*}"
+    TT_PREV_DATE="${VAL#*:}"
     TT_PREV_NAME="(HEAD $KEY date)"
   done
 
@@ -265,9 +265,10 @@ function check_time_travel__one_patch () {
   elif [ "$DELTA_SEC" -lt 0 ]; then
     [ "${#SRC}" -le "$TT_NAME_MAXLEN" ] || SRC="${SRC:0:$TT_NAME_MAXLEN}…"
     echo W: "Backwards time travel: Date '$PATCH_DATE' in '$SRC'" \
-      "is $DELTA_HR before '$TT_PREV_NAME'!" >&2
+      "is $DELTA_HR before '$TT_PREV_NAME' = '$TT_PREV_DATE'!" >&2
   fi
   PREV_UTS="$PATCH_UTS"
+  TT_PREV_DATE="$PATCH_DATE"
   TT_PREV_NAME="$SRC"
 }
 
