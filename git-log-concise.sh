@@ -10,10 +10,14 @@ function glc_main () {
   [ -z "$PAGER" ] || PAGER+=" $($PAGER --help 2>/dev/null |
     grep -m 1 -oPe '(^|\s)--quit-if-one-screen(\s|$)' | grep -oPe '--\S+')"
 
-  if [ -n "$PAGER" ] && tty -s <&1; then
-    "$FUNCNAME" "$@" | $PAGER
-    return $?
+  if tty -s <&1; then
+    [ -n "$GLC_INTERACTIVE" ] || local GLC_INTERACTIVE=true
+    if [ -n "$PAGER" ]; then
+      "$FUNCNAME" "$@" |& $PAGER
+      return $?
+    fi
   fi
+  [ -n "$GLC_INTERACTIVE" ] || local GLC_INTERACTIVE=false
 
   local GIT_TASK='log'
   case "$1" in
@@ -50,6 +54,7 @@ function glc_main () {
 
   local OPT="$1"
   case "$OPT" in
+    --reverse ) GIT_LOG_REVERSE="$OPT"; shift;;
     --bury | \
     --hoist | \
     --redo )
@@ -110,7 +115,7 @@ function glc_core () {
 
 
 function glc_detect_timetravel () {
-  local LN= PREV_UTS= UTS= SECONDS_PER_DAY=86400
+  local LN= PREV_UTS= UTS= SECONDS_PER_DAY=86400 N_TT=0
   while IFS= read -r LN; do
     UTS="${LN%%'</uts>'*}"
     LN="${LN#*'</uts>'}"
@@ -118,6 +123,7 @@ function glc_detect_timetravel () {
     echo "$LN"
     PREV_UTS="$UTS"
   done
+  glc_detect_timetravel__report
 }
 
 
@@ -127,11 +133,23 @@ function glc_detect_timetravel__check () {
   (( DELTA_SEC = UTS - PREV_UTS ))
   [ -z "$GIT_LOG_REVERSE" ] || (( DELTA_SEC = -DELTA_SEC ))
   [ "$DELTA_SEC" -ge 1 ] || return 0
+  (( N_TT += 1 ))
   LN+=$'\t\a'"<time-travel>"
   (( DELTA_DAYS = DELTA_SEC / SECONDS_PER_DAY ))
   [ "$DELTA_DAYS" == 0 ] || LN+="${DELTA_DAYS}d+"
   LN+="$(TZ=UTC printf -- '%(%T)T' "$DELTA_SEC")"
   LN+='</time-travel>'
+}
+
+
+function glc_detect_timetravel__report () {
+  local WHAT_WHERE='time travel in the time period shown.'
+  if [ "$N_TT" != 0 ]; then
+    echo W: "Found $N_TT occurrences of apparent $WHAT_WHERE" >&2
+    return 0
+  fi
+  $GLC_INTERACTIVE || return 0
+  echo "# Found no evidence of $WHAT_WHERE"
 }
 
 
