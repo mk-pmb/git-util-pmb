@@ -227,13 +227,13 @@ function explain_differing_patch_context () {
   ADDS_DELS="${ADDS_DELS#-+@}"
 
   local HEAD_ADDS="${ADDS_DELS%%[^+]*}"
-  [ -z "$HEAD_ADDS" ] || echo "H: If this hunk is misaligned," \
-    "you may need to decrease the offset line numbers by ${#HEAD_ADDS}." \
-    "-> $(calc_modified_atat %-${#HEAD_ADDS} %)"
+  local IF_MISALIGNED='H: If this hunk is misaligned, you may need to'
+  local ADJUST_WHAT="the offset line numbers '$ATAT_LINE'"
+  [ -z "$HEAD_ADDS" ] || echo "$IF_MISALIGNED decrease $ADJUST_WHAT" \
+    "by ${#HEAD_ADDS}. -> $(calc_modified_atat %-${#HEAD_ADDS} %)"
   local HEAD_DELS="${ADDS_DELS%%[^-]*}"
-  [ -z "$HEAD_DELS" ] || echo "H: If this hunk is misaligned," \
-    "you may need to increase the offset line numbers by ${#HEAD_DELS}." \
-    "-> $(calc_modified_atat %+${#HEAD_DELS} %)"
+  [ -z "$HEAD_DELS" ] || echo "$IF_MISALIGNED increase $ADJUST_WHAT" \
+    "by ${#HEAD_DELS}. -> $(calc_modified_atat %+${#HEAD_DELS} %)"
 }
 
 
