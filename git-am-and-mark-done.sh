@@ -195,7 +195,7 @@ function decode_want_subj () {
   # ^-- using the decoder from text-transforms-pmb
   case "$DECODED" in
     '' | *'=?'*'?='* )
-      echo "E: Failed to decode subject charset encoding: $WANT_SUBJ" >&2
+      echo E: "Patch $SRC: Failed to charset-decode subject: $WANT_SUBJ" >&2
       return 8;;
   esac
   WANT_SUBJ="$DECODED"
