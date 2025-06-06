@@ -229,8 +229,12 @@ function check_time_travel () {
     TT_PREV_NAME="(HEAD $KEY date)"
   done
 
-  [ "$TT_MODE" == validate ] && DELTA_SEC="$PREV_UTS" SRC="$TT_PREV_NAME" \
-    DELTA_HR=00:00:00 check_time_travel__tabulate
+  [ "$TT_MODE" == validate ] &&
+    PATCH_DATE="$TT_PREV_DATE"
+    DELTA_SEC="$PREV_UTS" \
+    SRC="$TT_PREV_NAME" \
+    DELTA_HR=00:00:00 \
+    check_time_travel__tabulate
 
   local TT_NAME_MAXLEN=20
   local TT_FILES=()
