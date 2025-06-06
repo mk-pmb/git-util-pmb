@@ -23,6 +23,19 @@ function am_and_mark_done () {
       -d ) ARG='--committer-date-is-author-date';;
       -F ) ARG='--fully-impersonate-all-authors';;
       -T ) ARG='--time-travel=ignore';;
+
+      -Tv ) # Show one screen full of time travel validation.
+        # Determine terminal height in lines
+        ARG="$(stty size)"
+        ARG="${ARG%%[^0-9]*}"
+        [ "${ARG:-0}" -ge 15 ] || ARG=15
+        (( ARG -= 1 )) # Start commit
+        (( ARG -= 1 )) # Summary/report
+        (( ARG -= 2 )) # Prompt line(s) of the user's shell
+        CFG[limit]="$ARG"
+        ARG='--time-travel=validate'
+        ;;
+
       -C ) ARG='--colorize=always';;
     esac
     case "$ARG" in
