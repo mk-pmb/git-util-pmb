@@ -3,9 +3,21 @@
 
 
 function git_amend_forcepush () {
+  local SELFPATH="$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")" # busybox
+
   [ -n "$1" ] || return 2$(echo 'E: no file names given' >&2)
+  local COMMIT_ENV=()
+  if [ "$1" == --confess ]; then
+    shift
+  else
+    eval "COMMIT_ENV=( $(
+      "$SELFPATH"/git-dump-commit-env-vars.sh --unamend env HEAD |
+        sed -nre '/^GIT_COMMITTER_/p') )"
+  fi
+  [ "$1" == -- ] && shift
   git add -A -- "$@" || return $?
-  git commit --amend --reuse-message=HEAD -- "$@" || return $?
+  env "${COMMIT_ENV[@]}" git commit --amend \
+    --reuse-message=HEAD -- "$@" || return $?
 
   local BRN="$(git branch | grep -xPe '\*\s+\S+' -m 1 \
     | grep -oPe '\S+$')"

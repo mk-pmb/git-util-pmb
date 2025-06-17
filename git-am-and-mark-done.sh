@@ -125,6 +125,10 @@ function am_and_mark_done__one () {
         echo E: $FUNCNAME: "Unsupported 'From:' header syntax: $AU_NAME" >&2
         return 4;;
     esac
+    #
+    # Want to replicate this for existing commits?
+    # Try: ./git-dump-commit-env-vars.sh env HEAD
+    #
     GIT_ENV+='GIT_COMMITTER_DATE="$PATCH_DATE" '
     GIT_ENV+='GIT_COMMITTER_NAME="$AU_NAME" '
     GIT_ENV+='GIT_COMMITTER_EMAIL="$AU_MAIL" '
