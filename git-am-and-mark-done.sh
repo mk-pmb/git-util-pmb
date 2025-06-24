@@ -170,6 +170,17 @@ function find_patch_header_value () {
 function find_patch_header_date () {
   local VAL= # pre-declare so we don't lose the return value of the next call:
   VAL="$(find_patch_header_value "$@")" || return $?
+
+  case "${CFG[time-travel]}" in
+    ignore ) ;;
+    * ) find_patch_header_date__validate || return $?;;
+  esac
+
+  echo "$VAL"
+}
+
+
+function find_patch_header_date__validate () {
   local ORIG="${VAL##* }"
   [[ "$ORIG" == [+-][0-9][0-9][0-9][0-9] ]] || return 4$(echo E: >&2 \
     "Time zone must be a 4-digit signed number $TRACE")
@@ -184,8 +195,6 @@ function find_patch_header_date () {
   WANT="${WANT%%[ ,]*}"
   [ "$ORIG" == "$WANT" ] || return 4$(echo E: >&2 \
     "Day of week was given as '$ORIG' but date gives '$WANT' $TRACE")
-
-  echo "$VAL"
 }
 
 
