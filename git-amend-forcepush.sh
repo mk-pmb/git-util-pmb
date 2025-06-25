@@ -14,10 +14,18 @@ function git_amend_forcepush () {
       "$SELFPATH"/git-dump-commit-env-vars.sh --unamend env HEAD |
         sed -nre '/^GIT_COMMITTER_/p') )"
   fi
+
+  local FLAGS=,
+  case "$1" in
+    -n | --no-push ) FLAGS+='nopush,'; shift;;
+  esac
+
   [ "$1" == -- ] && shift
   git add -A -- "$@" || return $?
   env "${COMMIT_ENV[@]}" git commit --amend \
     --reuse-message=HEAD -- "$@" || return $?
+
+  [ "${FLAGS/,nopush,/}" == "$FLAGS" ] || return 0
 
   local BRN="$(git branch | grep -xPe '\*\s+\S+' -m 1 \
     | grep -oPe '\S+$')"
