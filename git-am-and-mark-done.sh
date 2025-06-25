@@ -256,7 +256,7 @@ function check_time_travel () {
   done
 
   [ "$TT_MODE" == validate ] &&
-    PATCH_DATE="$TT_PREV_DATE"
+    PATCH_DATE="$TT_PREV_DATE" \
     DELTA_SEC="$PREV_UTS" \
     SRC="$TT_PREV_NAME" \
     DELTA_HR=00:00:00 \
