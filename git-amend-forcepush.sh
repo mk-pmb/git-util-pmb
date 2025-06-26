@@ -21,6 +21,7 @@ function git_amend_forcepush () {
   esac
 
   [ "$1" == -- ] && shift
+  [ "$#" -ge 1 ] || return 4$(echo E: 'Need at least one file to amend.' >&2)
   git add -A -- "$@" || return $?
   env "${COMMIT_ENV[@]}" git commit --amend \
     --reuse-message=HEAD -- "$@" || return $?
