@@ -119,6 +119,7 @@ function glfd_read_db () {
 function glfd_print_headings () {
   local BUF= ROW_SEMIFIXED= ROW_VARLEN=
   for TIME_DIRECTION in earliest latest; do
+    [ "${FLAGS[$TIME_DIRECTION]}" == + ] || continue
     for EVENT_TYPE in author commit mention; do
       BUF="${TIME_DIRECTION}_${EVENT_TYPE}_"
       [ "${FLAGS[${EVENT_TYPE}-date]}" == + ] || continue
@@ -153,6 +154,7 @@ function glfd_print_results () {
     ROW_SEMIFIXED=
     ROW_VARLEN=
     for TIME_DIRECTION in earliest latest; do
+      [ "${FLAGS[$TIME_DIRECTION]}" == + ] || continue
       for EVENT_TYPE in author commit mention; do
         [ "${FLAGS[${EVENT_TYPE}-date]}" == + ] || continue
         KEY="${TIME_DIRECTION:0:1}${EVENT_TYPE:0:1}:$FILE"
