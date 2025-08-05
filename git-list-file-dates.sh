@@ -20,8 +20,12 @@ function glfd_cli_main () {
     [mention-date]=+
     [subj]=-
     [uts]=-
+    [reverse]=-
     )
-  local OUTPUT_SORT_MODE='filename'
+  local -A CFG=(
+    [sort_cmp]='version-sort'
+    [sort_what]='filename'
+    )
 
   while [ "${1:0:1}" == - ]; do
     # Check very simple options:
@@ -29,7 +33,8 @@ function glfd_cli_main () {
       -- ) shift; break;;
 
       --sort=filename | \
-      --sort=no ) OUTPUT_SORT_MODE="${1#*=}"; shift; continue;;
+      --sort=table | \
+      --sort=no ) CFG[sort_what]="${1#*=}"; shift; continue;;
       --sort=* ) echo E: 'unsupported sort criterion' >&2; return 4;;
 
     esac
@@ -46,6 +51,10 @@ function glfd_cli_main () {
     shift
   done
 
+  local SORT_CMD='sort'
+  [ -z "${CFG[sort_cmp]}" ] || SORT_CMD+=" --${CFG[sort_cmp]}"
+  [ "${FLAGS[reverse]}" == - ] || SORT_CMD+=' --reverse'
+
   local -A DB=(
     # Database key format: [el][aco]:<filename>
     #   [el] = `e`arliest or `l`atest
@@ -55,7 +64,17 @@ function glfd_cli_main () {
 
   glfd_read_db < <(git log "${GIT_OPT[@]}" "$@") || return $?
   [ "${FLAGS[headings]}" == - ] || glfd_print_headings || return $?
+  case "${CFG[sort_what]}" in
+    table ) exec > >( $SORT_CMD );;
+  esac
   glfd_print_results || return $?
+
+  # Close stdout and wait until potential stdout pipes are done:
+  exec >&-
+  wait
+  # Give the potential stdout pipes a bit more time to print their output
+  # before the user's shell will print its prompt:
+  tty --silent && sleep 0.1s
 }
 
 
@@ -143,8 +162,9 @@ function glfd_print_results () {
   # Read (and maybe sort) filenames:
   BUF='cat'
   case "$OUTPUT_SORT_MODE" in
+    table ) ;;
     no ) ;;
-    filename ) BUF='sort --version-sort';;
+    filename ) BUF="$SORT_CMD";;
   esac
   local FILES=()
   readarray -t FILES < <(printf -- '%s\n' "${!DB[@]}" |
