@@ -80,10 +80,10 @@ function gax_cli_main () {
 function undo_auto_sync () {
   local CMSG="$(git log -n 1 --pretty=%B | head --bytes=64)"
   echo "D: check auto-commit: detected commit message: '$CMSG'" >&2
-  case "${CMSG,,}" in
-    'git-annex in' | \
-    'git-annex in '* | \
-    'git-annex automatic sync' )
+  case " ${CMSG,,} " in
+    *' content removed from git annex '* | \
+    ' git-annex in '* | \
+    ' git-annex automatic '* )
       echo "W: gonna soft-reset: detected commit message: '$CMSG'" >&2
       git reset --soft HEAD~1
       return $?;;
