@@ -10,6 +10,7 @@ function github_configure_repo () {
   local GIT_DIR_BN="$(basename -- "$GIT_DIR" .git)"
   local GH_SECT='github'
   local GH_SSH_SRV="$(gh_cfg_get ssh-host)"
+  [ -n "$GH_SSH_SRV" ] || GH_SSH_SRV='github.com'
   local GH_USER="$(gh_cfg_get username)"
   local GH_USER_RGX="$(<<<"$GH_USER" sed -re 's~[^A-Za-z0-9_-]~\\&~g')"
 
@@ -50,11 +51,7 @@ function github_configure_repo () {
     echo "E: No github remotes found! Try: git remote add $GH_RMT" \
       "git@$GH_SSH_SRV:$GH_USER/$GIT_DIR_BN.git" >&2)
 
-  if [ -n "$GH_SSH_SRV" ]; then
-    harmonize_gh_ssh_srv "${GHRMT_LIST[@]}" || return $?
-  else
-    GH_SSH_SRV=github.com
-  fi
+  harmonize_gh_ssh_srv "${GHRMT_LIST[@]}" || return $?
 
   [ -n "$GH_RMT" ] || return 4$(echo 'E: GH_RMT not configured' >&2)
   git remote | grep -qxFe "$GH_RMT" || return 4$(
@@ -235,7 +232,7 @@ function try_suggest_create_repo () {
     echo 'no idea.'
   fi
 
-  local CREA_URL='https://github.com/new?'
+  local CREA_URL="https://$GH_SSH_SRV/new?"
   [ -n "$SUG_DESCR" ] && CREA_URL+='repository_description=%1Bbase64:'"$(
     echo -n "$SUG_DESCR" | base64 --wrap=0 | tr -d =)&"
 
