@@ -45,7 +45,7 @@ function github_configure_repo () {
     [ -n "${GHRMT_LIST[*]}" ] && break
   done
 
-  rename_foreign_origin_to_upstream
+  autodetect_upstream || return $?
 
   [ -n "${GHRMT_LIST[*]}" ] || return 2$(
     echo "E: No github remotes found! Try: git remote add $GH_RMT" \
@@ -178,6 +178,18 @@ function list_remote_names_and_users () {
 }
 
 
+function autodetect_upstream () {
+  local HOW='
+    rename_foreign_origin_to_upstream
+    autodetect_upstream_from_package_json
+    '
+  for HOW in $HOW; do
+    git remote | grep -qxFe upstream && return 0
+    "$HOW" || true
+  done
+}
+
+
 function rename_foreign_origin_to_upstream () {
   local RMT_NAMES_USERS="$(list_remote_names_and_users)"
   if ! <<<"$RMT_NAMES_USERS" grep -qPe '^/origin/'; then
@@ -247,6 +259,26 @@ function try_suggdescr_nodejs_package_json () {
   [ -f package.json ] || return 2
   # grep -m1 -Pe '^ +"description": *"
   nodejs -p 'require("./package.json").description'
+}
+
+
+function autodetect_upstream_from_package_json () {
+  [ -f package.json ] || return 2
+  # grep -m1 -Pe '^ +"description": *"
+  local REPO_URL='var r = require("./package.json").repository; r.url || r'
+  REPO_URL="$(nodejs -p "$REPO_URL")"
+  [ -n "$REPO_URL" ] || return 2
+
+  local RGX='^[A-Za-z0-9_-]+/[A-Za-z0-9_-]+$'
+  [[ "$REPO_URL" =~ $RGX ]] && REPO_URL="https://github.com/$REPO_URL.git"
+
+  case "$REPO_URL" in
+    "git@$GH_SSH_SRV:$GH_USER/"* ) return 0;;
+    *"://$GH_SSH_SRV/$GH_USER/"* ) return 0;; # * = (git+|)https
+    *"://github.com/$GH_USER/"* ) return 0;; # * = (git+|)https
+  esac
+  echo D: "Adding git remote upstream = $REPO_URL"
+  git remote add -- upstream "$REPO_URL" || return $?
 }
 
 
