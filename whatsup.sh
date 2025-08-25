@@ -25,6 +25,7 @@ function whatsup_cli_main () {
   maybe_warn_broken_basic_programs || return $?
   maybe_warn_gitfile || return $?
   maybe_warn_gitattributes_bin_blobs || return $?
+  scan_special_gitignore_hints || return $? || return $?
 
   ( print_important_hints
     [ -d "$GIT_TOPLEVEL" ] || return 4
@@ -122,6 +123,12 @@ function maybe_warn_gitattributes_bin_blobs () {
     MSG+=' (independent of whether they are just symlinks)'
   MSG+=": >>$GAT printf -- '*.%s -text\n' ${FOUND//$'\n'/ }"
   imphint "$MSG"
+}
+
+
+function scan_special_gitignore_hints () {
+  local VAL="$(git status -uall --short -- '**/.gitignore' | cut -b 4-)"
+  [ -z "$VAL" ] || imphint "W: Untracked .gitignore files: ${VAL//$'\n'/, }"
 }
 
 
