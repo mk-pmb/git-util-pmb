@@ -129,6 +129,36 @@ function maybe_warn_gitattributes_bin_blobs () {
 function scan_special_gitignore_hints () {
   local VAL="$(git status -uall --short -- '**/.gitignore' | cut -b 4-)"
   [ -z "$VAL" ] || imphint "W: Untracked .gitignore files: ${VAL//$'\n'/, }"
+  maybe_warn_missing_gitignored_subrepos || return $?
+}
+
+
+function maybe_warn_missing_gitignored_subrepos () {
+  local SUB_REPOS="$(
+    # We forgo the usual `readarray … < <(…)` for compatibility with
+    # busybox not having process substitution.
+    git grep -oPe '^/\S+/\.git(?=\s|#|$)' -- {,'**/'}.gitignore 2>&1)"$'\n'
+  case "$SUB_REPOS" in
+    'fatal: cannot use Perl-compatible '* | \
+    *'fatal:'*' not compiled with USE_LIBPCRE' )
+      # On systems where you can't even afford PCRE,
+      # you probably have reasons to omit some sub-repos.
+      return 0;;
+  esac
+  local VAL= MISSING=
+  while [ -n "$SUB_REPOS" ]; do
+    VAL="${SUB_REPOS%%$'\n'*}"
+    SUB_REPOS="${SUB_REPOS#*$'\n'}"
+    VAL="${VAL/'.gitignore:/'/}"
+    [ -f "$VAL" ] && [ -s "$VAL" ] && continue
+    [ -f "$VAL/config" ] && [ -s "$VAL/config" ] && continue
+    VAL="${VAL%/.git}"
+    MISSING+="$VAL"$'\n'
+  done
+  VAL="$(echo "$MISSING" | sort -Vu)"
+  VAL="${VAL%$'\n'}"
+  VAL="${VAL//$'\n'/ }"
+  [ -z "$VAL" ] || imphint "W: Missing sub-repos:$VAL"
 }
 
 
