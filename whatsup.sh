@@ -139,6 +139,8 @@ function maybe_warn_missing_gitignored_subrepos () {
     # busybox not having process substitution.
     git grep -oPe '^/\S+/\.git(?=\s|#|$)' -- {,'**/'}.gitignore 2>&1)"$'\n'
   case "$SUB_REPOS" in
+    'error: unknown switch `o'"'"[$'\n ']'usage: git grep '* )
+      return 0;; # git v1.9.1 compat
     'fatal: cannot use Perl-compatible '* | \
     *'fatal:'*' not compiled with USE_LIBPCRE' )
       # On systems where you can't even afford PCRE,
