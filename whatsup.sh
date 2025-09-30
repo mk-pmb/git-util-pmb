@@ -31,6 +31,7 @@ function whatsup_cli_main () {
     [ -d "$GIT_TOPLEVEL" ] || return 4
     ( git branch -v | grep . ||
       echo 'No branches yet? To create an empty branch:' \
+        "env GIT_{AUTHOR,COMMITTER}_DATE='$(date -R)'" \
         "git commit --allow-empty --message='Init repo.'"
     ) | "${SEDFMT//|/colorize_branches_list}"
     git-log-concise -n 3 | cut -b 1-$(( $COLUMNS - 1 )) |
