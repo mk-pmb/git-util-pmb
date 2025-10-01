@@ -76,7 +76,8 @@ function find_apply_patches () {
   done
   local PATCH_DONE_UTS="$EPOCHSECONDS" DURA_SEC=
   (( DURA_SEC = PATCH_DONE_UTS - PATCH_START_UTS ))
-  echo "# Done, $N_DONE patch steps have been applied in $DURA_SEC sec."
+  echo "# Done, $N_DONE patch steps have been applied in $DURA_SEC sec." \
+    "@ $(printf '%(%F %T)T' -1)"
 }
 
 
