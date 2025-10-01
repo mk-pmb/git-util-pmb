@@ -34,7 +34,10 @@ function find_apply_patches () {
     PATCH_TITLE="${PATCH_TITLE#/}"
 
     readarray -t OPTS < <(sed -nre 's~^#!\s*\-\s+~~p' -- "$PATCH_FILE")
-    readarray -t ARGS < <(sed -nre 's~^#!\s*\+\s+~~p' -- "$PATCH_FILE"
+    readarray -t ARGS < <(
+      scan_simple_args "$PATCH_FILE"
+      # ^-- Don't sort: Order may be important for some CLI args.
+
       scan_git_greps "$PATCH_FILE" | LANG=C sort -Vu
       )
 
@@ -74,6 +77,39 @@ function find_apply_patches () {
   local PATCH_DONE_UTS="$EPOCHSECONDS" DURA_SEC=
   (( DURA_SEC = PATCH_DONE_UTS - PATCH_START_UTS ))
   echo "# Done, $N_DONE patch steps have been applied in $DURA_SEC sec."
+}
+
+
+function literally_echo () {
+  case "$#$1" in
+    1-n | 1-e ) echo -- "$1";;
+    * ) echo "$@";;
+  esac
+}
+
+
+function scan_simple_args () {
+  local SCAN=()
+  local VAL='s~^#!\s*\+(<([^<>]*)>|)\s+~\2>~p' OPT=
+  readarray -t SCAN < <(sed -nre "$VAL" -- "$@")
+  # ^-- Don't sort: Order may be important for some CLI args.
+  for VAL in "${SCAN[@]}"; do
+    OPT="${VAL%%'>'*}"
+    VAL="${VAL#*'>'}"
+    case "$OPT"' ' in
+      '= ' ) literally_echo "$VAL";;
+      ' ' )
+        OPT="${VAL//[^\*\?]/}"
+        [ -z "$OPT" ] || echo W: $FUNCNAME: \
+          "Please clarify whether the wildcard '${OPT:0:1}' is meant literally" \
+          "(in that case, use '#!+<=> your *literal* argument')" \
+          "or maybe you meant something like '#!+<git ls-files> docs/*.md'?" \
+          "in: '$VAL'" >&2
+        literally_echo "$VAL";;
+      'git ls-files '* ) $OPT -- "$VAL";;
+      * ) echo E: $FUNCNAME: "Unsupported effect option: '$OPT'" >&2; return 4;;
+    esac
+  done
 }
 
 
