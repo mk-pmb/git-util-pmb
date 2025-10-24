@@ -101,12 +101,30 @@ function with_each_patch_file () {
 }
 
 
+function decode_header_value () {
+  local ORIG="$1" DESCR="$2"
+  [ -n "$ORIG" ] || return 0
+  [ -n "$DESCR" ] || DESCR='(description missing)'
+  local VAL="$ORIG"
+  case "$ORIG" in
+    *'=?'*'?='* )
+      VAL="$(decode-mime-header-value "$VAL")";; # <- from text-transforms-pmb
+  esac
+  case "$VAL" in
+    '' | \
+    *'=?'*'?='* )
+      echo E: "Patch $SRC: Failed to charset-decode $DESCR: $ORIG" >&2
+      return 8;;
+  esac
+  echo "$VAL"
+}
+
+
 function am_and_mark_done__one () {
   local WANT_SUBJ="$(git-find-commit-titles-in-patch-file -- "$SRC")"
-  case "$WANT_SUBJ" in
-    '' ) echo "E: Failed to detect commit title in patch: $SRC" >&2; return 4;;
-    *'=?'*'?='* ) decode_want_subj || return $?;;
-  esac
+  [ -n "$WANT_SUBJ" ] || return 4$(
+    echo E: "Failed to detect commit title in patch: $SRC" >&2)
+  WANT_SUBJ="$(decode_header_value "$WANT_SUBJ" 'commit title')"
 
   local GIT_ENV=
   if [ -n "${CFG[fully-impersonate-all-authors]}" ]; then
@@ -120,6 +138,7 @@ function am_and_mark_done__one () {
         AU_NAME="${AU_NAME%'>'}"
         AU_MAIL="${AU_NAME##*'<'}"
         AU_NAME="${AU_NAME%' <'*}"
+        AU_NAME="$(decode_header_value "$AU_NAME" 'author name')"
         ;;
       * )
         echo E: $FUNCNAME: "Unsupported 'From:' header syntax: $AU_NAME" >&2
@@ -213,18 +232,6 @@ function vdo () {
     echo "W: failed (rv=$RV): $*" >&2
   fi
   return "$RV"
-}
-
-
-function decode_want_subj () {
-  local DECODED="$(decode-mime-header-value "$WANT_SUBJ")"
-  # ^-- using the decoder from text-transforms-pmb
-  case "$DECODED" in
-    '' | *'=?'*'?='* )
-      echo E: "Patch $SRC: Failed to charset-decode subject: $WANT_SUBJ" >&2
-      return 8;;
-  esac
-  WANT_SUBJ="$DECODED"
 }
 
 
