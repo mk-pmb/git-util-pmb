@@ -145,10 +145,20 @@ function harmonize_gh_ssh_srv () {
 }
 
 
+function fixup_git_remote_url () {
+  local URL="$1"
+  case "$URL" in
+    git+https://* ) URL="${URL#*+}";;
+  esac
+  echo "$URL"
+}
+
+
 function autoadd_ghrmt_verbose () {
   local RMT_URL="$1"
   [ -n "$RMT_URL" ] || return 1
   echo "I: Found a plausible guess for adding a remote: $GH_RMT = $RMT_URL"
+  RMT_URL="$(fixup_git_remote_url "$RMT_URL")"
   git remote add "$GH_RMT" "$RMT_URL"
   return $?
 }
@@ -277,6 +287,7 @@ function autodetect_upstream_from_package_json () {
     *"://$GH_SSH_SRV/$GH_USER/"* ) return 0;; # * = (git+|)https
     *"://github.com/$GH_USER/"* ) return 0;; # * = (git+|)https
   esac
+  REPO_URL="$(fixup_git_remote_url "$REPO_URL")"
   echo D: "Adding git remote upstream = $REPO_URL"
   git remote add -- upstream "$REPO_URL" || return $?
 }
