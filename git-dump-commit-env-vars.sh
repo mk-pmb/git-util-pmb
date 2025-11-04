@@ -32,7 +32,7 @@ function git_dump_commit_env_vars () {
   esac
   case "$FMT" in
     env | rawenv ) SED+='s~^æ+=~GIT_\U&\E~; ';;
-    bash-dict ) SED+='s~^(æ+)=~[\1]=~; ';;
+    bashdict ) SED+='s~^(æ+)=~[\1]=~; ';;
   esac
 
   SED="${SED//æ/[A-Za-z0-9_-]}"
