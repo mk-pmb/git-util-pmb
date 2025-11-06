@@ -41,6 +41,8 @@ function gax_cli_main () {
         -* ) ;;
         *' @' ) GAX_ARGS=( "$* $HOSTNAME" ); shift "$#";;
       esac;;
+    explore_unused | \
+    . ) GAX_ACTION="gax_$GAX_ACTION"; GAX_CMD=();;
     suggest )
       GAX_ACTION='git-annex-suggest-add-by-fext'; GAX_CMD=();;
     syg )
@@ -64,6 +66,8 @@ function gax_cli_main () {
     && echo "I: finished with rv=$GAX_RV: ${GAX_CMD[*]} ${GAX_ARGS[*]}"
 
   case "$GAX_ACTION:$GAX_RV" in
+    unused:0 )
+      echo D: 'Use "gax explore_unused" to try and see what the files are.';;
     #
     #-----v----------v----------v----------v----------v----------v-----
     *:0 ) ;; # gax succeeded -> skip the hints below this line. -.
@@ -125,6 +129,22 @@ function gax_unresolve () {
   find "$REPO_PATH/" -xdev "${PRUNES[@]}" -type l \
     '(' -lname "$ANX_OBJ" -o -lname "*/$ANX_OBJ" ')' \
     "$@" || return $?
+}
+
+
+function gax_explore_unused () {
+  local OBJ_DIR="$(git rev-parse --git-dir)/annex/objects"
+  [ -d "$OBJ_DIR" ] || return 4$(
+    echo E: 'Failed to detect annex objects dir!' >&2)
+  [ "$#" -ge 1 ] || set -- $(git-annex unused 2>/dev/null |
+    sed -nre 's~^\s+[0-9]+\s+([A-Z]{2}[A-Za-z0-9.-]+)$~\1~p')
+  [ "$1" != -- ] || shift
+  while [ "$#" -ge 1 ]; do
+    ( cd -- "$OBJ_DIR"/*/*/"$1" && xpl [A-Za-z]* )
+    # ^-- xpl = file-util-pmb/explore-fso.sh
+    shift
+    [ "$#" == 0 ] || echo
+  done
 }
 
 
