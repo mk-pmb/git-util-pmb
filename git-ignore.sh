@@ -37,6 +37,7 @@ function cli_main () {
 
 
 function add_to_or_edit_gitignore () {
+  local SECTION_SEP=$'\n\n'
   >>"$IGN_FN" || return $?
   local HAD=
   if [ -s "$IGN_FN" ]; then
@@ -49,8 +50,8 @@ function add_to_or_edit_gitignore () {
   [[ "$HAD" == *$'\n' ]] || echo >>"$IGN_FN" || return $?
 
   [ "$HAD_LEN" -ge 1 ] || suggest_initial_ignores >>"$IGN_FN" || return $?
-  [[ "${HAD,,}" == *$'\n# unsorted'* ]] || echo >>"$IGN_FN" $'\n\n\n#' \
-    'Unsorted stuff (this section should be empty):' || return $?
+  [[ "${HAD,,}" == *$'\n# unsorted'* ]] || echo >>"$IGN_FN" \
+    '# Unsorted stuff (this section should be empty):' || return $?
 
   case "$#:$1" in
     [01]: ) "${VISUAL:-true}" "$IGN_FN"; return $?;;
@@ -175,6 +176,11 @@ function suggest_initial_ignores () {
   VAL="$(printf -- '/%s\n' "${!IGN[@]}" | sort --version-sort)"
   HAD+=$'\n'"$VAL"$'\n'
   echo "$VAL"
+  echo "$SECTION_SEP"
+
+  echo '# Host-specific files'
+  echo '/*.@*'
+  echo "$SECTION_SEP"
 }
 
 
