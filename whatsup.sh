@@ -22,6 +22,8 @@ function whatsup_cli_main () {
     )" # \n as item separator is easy to replace b/c there's none at the end.
 
   local IMPORTANT_HINTS=()
+  local LESS_IMPORTANT_HINTS=()
+  maybe_warn_repo_init_neglect || return $?
   maybe_warn_broken_basic_programs || return $?
   maybe_warn_gitfile || return $?
   maybe_warn_gitattributes_bin_blobs || return $?
@@ -29,11 +31,9 @@ function whatsup_cli_main () {
 
   ( print_important_hints
     [ -d "$GIT_TOPLEVEL" ] || return 4
-    ( git branch -v | grep . ||
-      echo 'No branches yet? To create an empty branch:' \
-        "env GIT_{AUTHOR,COMMITTER}_DATE='$(date -R)'" \
-        "git commit --allow-empty --message='Init repo.'"
-    ) | "${SEDFMT//|/colorize_branches_list}"
+    [ "${#LESS_IMPORTANT_HINTS[@]}" == 0 ] ||
+      printf -- '%s\n' "${LESS_IMPORTANT_HINTS[@]}"
+    git branch -v | "${SEDFMT//|/colorize_branches_list}"
     git-log-concise -n 3 | cut -b 1-$(( $COLUMNS - 1 )) |
       "${SEDFMT//|/colorize_concise_log}"
     git "${GIT_STATUS_OPTS[@]}" status "${GIT_STATUS_ARGS[@]}" |
@@ -162,6 +162,21 @@ function maybe_warn_missing_gitignored_subrepos () {
   VAL="${VAL%$'\n'}"
   VAL="${VAL//$'\n'/ }"
   [ -z "$VAL" ] || imphint "W: Missing sub-repos:$VAL"
+}
+
+
+function maybe_warn_repo_init_neglect () {
+  local LN= NEGLECT="$(
+    GIT_WRIN_WARN_FD=1 git-warn-repo-init-neglect || true)"$'\n'
+  while [ -n "$NEGLECT" ]; do
+    LN="${NEGLECT%%$'\n'*}"
+    NEGLECT="${NEGLECT#*$'\n'}"
+    case "$LN" in
+      '' ) ;;
+      [EW]:* ) imphint "$LN";;
+      * ) LESS_IMPORTANT_HINTS+=( "$LN" );;
+    esac
+  done
 }
 
 
