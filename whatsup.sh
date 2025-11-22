@@ -138,7 +138,7 @@ function maybe_warn_missing_gitignored_subrepos () {
   local SUB_REPOS="$(
     # We forgo the usual `readarray … < <(…)` for compatibility with
     # busybox not having process substitution.
-    git grep -oPe '^/\S+/\.git(?=\s|#|$)' -- {,'**/'}.gitignore 2>&1)"$'\n'
+    git list-gitignored-subrepos 2>&1)"$'\n'
   case "$SUB_REPOS" in
     'error: unknown switch `o'"'"[$'\n ']'usage: git grep '* )
       return 0;; # git v1.9.1 compat
@@ -154,8 +154,10 @@ function maybe_warn_missing_gitignored_subrepos () {
     SUB_REPOS="${SUB_REPOS#*$'\n'}"
     VAL="${VAL/'.gitignore:/'/}"
     [ -f "$VAL" ] && [ -s "$VAL" ] && continue
+    # ^-- gitfile, man 5 gitrepository-layout
     [ -f "$VAL/config" ] && [ -s "$VAL/config" ] && continue
-    VAL="${VAL%/.git}"
+    # ^-- Regular non-bare sub-repo.
+    # (Bare sub-repos aren't supported yet.)
     MISSING+="$VAL"$'\n'
   done
   VAL="$(echo "$MISSING" | sort -Vu)"
