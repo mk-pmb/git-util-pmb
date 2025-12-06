@@ -4,6 +4,12 @@
 
 function ttcommit_cli_main () {
   export LANG{,UAGE}=en_US.UTF-8  # make error messages search engine-friendly
+  local GIT_ACTION='commit'
+  case "$1" in
+    --merge | \
+    --action=* ) GIT_ACTION="${1#--}"; GIT_ACTION="${GIT_ACTION#*=}"; shift;;
+  esac
+
   local NOW="$1"; shift
   local UTS=0 VAL=
 
@@ -47,7 +53,7 @@ function ttcommit_cli_main () {
     # Date: Thu, 7 Apr 2005 15:13:13 -0700        # UTS=1112911993
 
   NOW="$(date -Rd "@$UTS")"
-  env GIT_{AUTHOR,COMMITTER}_DATE="$NOW" git commit "$@" || return $?
+  env GIT_{AUTHOR,COMMITTER}_DATE="$NOW" git "$GIT_ACTION" "$@" || return $?
 }
 
 
