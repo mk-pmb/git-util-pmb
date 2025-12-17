@@ -61,7 +61,11 @@ function gax_cli_main () {
       GAX_ACTION="gax_$GAX_ACTION"; GAX_CMD=();;
   esac
 
-  [ -z "$GAX_ACTION" ] || GAX_CMD+=( "$GAX_ACTION" )
+  case "$GAX_ACTION" in
+    '' ) ;;
+    *+* ) GAX_CMD+=( "${GAX_ACTION%%+*}" );;
+    * ) GAX_CMD+=( "$GAX_ACTION" );;
+  esac
   [ -n "$debian_chroot" ] || export debian_chroot='gax'
   [ -n "${CFG[announce-cmd]}" ] \
     && echo "I: gonna run: ${GAX_CMD[*]} ${GAX_ARGS[*]}"
@@ -75,12 +79,14 @@ function gax_cli_main () {
   case "$GAX_ACTION:$GAX_RV" in
     unused:0 )
       echo D: 'Use "gax explore_unused" to try and see what the files are.';;
+    drop+rm:0 ) with_dotgit_worktree_symlink git rm -- "$@" || return $?;;
     #
     #-----v----------v----------v----------v----------v----------v-----
     *:0 ) ;; # gax succeeded -> skip the hints below this line. -.
     #-----v----------v----------v----------v----------v----------v-----
     #
     upd:* | update:* ) echo "H: Did you mean syg = sync+get?" >&2;;
+    rm:* ) echo "H: Did you mean drop+rm?" >&2;;
     * ) echo "W: $GAX_ACTION: rv=$GAX_RV" >&2;;
   esac
 
