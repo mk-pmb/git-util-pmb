@@ -32,6 +32,13 @@ function gax_cli_main () {
         "Cannot determine preferred backend!" >&2)
       GAX_ARGS=( "--backend=$VAL" )
       GAX_ACTION='migrate';;
+    get )
+      [ "$#" -ge 1 ] || return 4$(echo E: "Flinching from 'get'" \
+        "with no arguments. Use 'get .' if you really mean it." >&2)
+      # ^-- This flinching is useful if you want to just store "gax get "
+      #     in your shell history to easily have it available for then
+      #     invoking it again with long filenames.
+      ;;
   esac
 
   case "$GAX_ACTION" in
