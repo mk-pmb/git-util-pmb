@@ -32,6 +32,7 @@ function ttcommit_cli_main () {
     VAL="${VAL#-}"
     VAL="${VAL#+}"
     case "$VAL" in
+      [0-9][0-9]:[0-9][0-9]: ) NOW+=" $1$(printf '%(%S)T' -1)"; shift;;
       [0-9]* ) NOW+=" $1"; shift;;
       * ) break;;
     esac
