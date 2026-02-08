@@ -8,12 +8,9 @@ function ggrep_cli_init () {
   local SELFPATH="$(dirname -- "$SELFFILE")"
   local SELFNAME="$(basename -- "$SELFFILE" .sh)"
 
-  if tty --silent <&1; then
-    clear
-    exec smart-less-pmb +Gg -e "$SELFFILE" "$@"
-    return $?$(echo E: ggrep: "Failed to re-exec self, rv=$?." >&2)
-  fi
-  local FOUND="$(git grep --color=always -nF "$@" |
+  local CLI_ARGS=( "$@" )
+  ggrep_maybe_autopager || return $?
+  local FOUND="$(git grep --color=always -nF "${CLI_ARGS[@]}" |
 
     # Protect our variable memory from matches in minified JavaScript files:
     cut --bytes=1-800 |
@@ -26,6 +23,28 @@ function ggrep_cli_init () {
   local PREV_FILE= MATCH_LEN="${#MATCH_CNT}" MATCH_NUM=0
   ggrep_with_each_result ggrep_print_result_line || return $?
   echo
+}
+
+
+function ggrep_maybe_autopager () {
+  tty --silent <&1 || return 0
+
+  local TERM_HEIGHT="$(stty size | grep -oPe '^\d+(?= )')"
+  case "${CLI_ARGS[0]}" in
+    -b[A-Za-z]* )
+      CLI_ARGS=( -b "${CLI_ARGS[0]/b/}" "${CLI_ARGS[@]:1}" );;
+  esac
+  case "${CLI_ARGS[0]}" in
+    -b | --pre-blank )
+      CLI_ARGS=( "${CLI_ARGS[@]:1}" )
+      exec </dev/null
+      yes '' | head --lines="${TERM_HEIGHT:-100}"
+      return 0;;
+  esac
+
+  clear
+  exec smart-less-pmb +Gg -e "$SELFFILE" "${CLI_ARGS[@]}"
+  return $?$(echo E: ggrep: "Failed to re-exec self, rv=$?." >&2)
 }
 
 
