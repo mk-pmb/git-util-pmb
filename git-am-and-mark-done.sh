@@ -8,6 +8,7 @@ function am_and_mark_done () {
   local -A CFG=(
     [am-flags]=
     [colorize]=
+    [expect-timezone]='local'
     [health-check]=
     [limit]=
     [time-travel]='flinch-if-impersonating'
@@ -23,6 +24,7 @@ function am_and_mark_done () {
       -d ) ARG='--committer-date-is-author-date';;
       -F ) ARG='--fully-impersonate-all-authors';;
       -T ) ARG='--time-travel=ignore';;
+      -U ) ARG='--expect-timezone=UTC';;
 
       -Tv ) # Show one screen full of time travel validation.
         # Determine terminal height in lines
@@ -46,6 +48,7 @@ function am_and_mark_done () {
       '' ) CFG["${ARG#--}"]=+; continue;;
 
       --colorize=* | \
+      --expect-timezone=* | \
       --health-check=* | \
       --limit=* | \
       --time-travel=* | \
@@ -203,9 +206,27 @@ function find_patch_header_date__validate () {
   local ORIG="${VAL##* }"
   [[ "$ORIG" == [+-][0-9][0-9][0-9][0-9] ]] || return 4$(echo E: >&2 \
     "Time zone must be a 4-digit signed number $TRACE")
-  local WANT="$(date +%z -d "${VAL% *}")"
-  [ "$ORIG" == "$WANT" ] || return 4$(echo E: >&2 \
-    "Time zone was given as '$ORIG' but date gives '$WANT' $TRACE")
+  local WANT="${CFG[expect-timezone]}"
+  case "${ORIG,,}=${WANT,,}" in
+    *=*=* ) echo E: "Time zone must not contain literal '='!" >&2; return 4;;
+    "${WANT,,}"=* ) ;;
+    +0000=utc ) ;;
+    *=local )
+      WANT="$(date +%z -d "${VAL% *}")"
+      if [ "$ORIG" != "$WANT" ]; then
+        case "${ORIG,,}" in
+          +0000 | utc )
+            echo H: 'Did you forget option -U (--expect-timezone=UTC)?' >&2;;
+        esac
+        echo E: "Time zone in patch was given as '$ORIG'" \
+          "but we expect local time, and date gives '$WANT' $TRACE" >&2
+        return 4
+      fi
+      ;;
+    * )
+      echo E: "Expected time zone '$WANT' but found '$ORIG' $TRACE" >&2
+      return 4;;
+  esac
 
   ORIG="${VAL%%[ ,]*}"
   WANT="${VAL% *}"
