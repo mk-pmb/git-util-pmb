@@ -15,7 +15,7 @@ function ligisur_cli_main () {
   local SED_SPLIT_DETAILS='s~(/\.git)\s*(#|$)~\1 ~; s~(/\.git)\s+~\1\t~'
   if [ -z "$PATH_ONLY" ]; then
     true # caller wants details, nothing to do here.
-  elif git grep --help | grep -qFe "$PATH_ONLY"; then
+  elif git grep --help 2>/dev/null | grep -qFe "$PATH_ONLY"; then
     # caller doesn't want details, and we can use git-grep to omit them.
     SED_SPLIT_DETAILS=
   else
