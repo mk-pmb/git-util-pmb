@@ -6,11 +6,11 @@ function am_and_mark_done () {
   export LANG{,UAGE}=en_US.UTF-8  # make error messages search engine-friendly
 
   local -A CFG=(
+    [am-flags]=
+    [colorize]=
     [health-check]=
     [limit]=
-    [am-flags]=
     [time-travel]='flinch-if-impersonating'
-    [colorize]=
     )
   local PATCH_FILES_TODO=()
   local ARG=
