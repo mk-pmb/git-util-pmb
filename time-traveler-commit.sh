@@ -10,8 +10,7 @@ function ttcommit_cli_main () {
     --action=* ) GIT_ACTION="${1#--}"; GIT_ACTION="${GIT_ACTION#*=}"; shift;;
   esac
 
-  local NOW="$1"; shift
-  local UTS=0 VAL=
+  local NOW= VAL= UTS=0
 
   local WEEKDAY_NAMES_SHORT=":$(
     TZ=UTC           printf '%(%a)T:' 7{0..6}01337
@@ -28,24 +27,58 @@ function ttcommit_cli_main () {
     VAL="$1"
     VAL="${VAL%,}"
     VAL="${VAL,,}"
-    [ "${DATE_WORDS_LC/:$VAL:/}" == "$DATE_WORDS_LC" ] || VAL=1
-    VAL="${VAL#-}"
-    VAL="${VAL#+}"
-    case "$VAL" in
-      [0-9][0-9]:[0-9][0-9]: ) NOW+=" $1$(printf '%(%S)T' -1)"; shift;;
-      [0-9]* ) NOW+=" $1"; shift;;
+    [ "${DATE_WORDS_LC/:$VAL:/}" == "$DATE_WORDS_LC" ] ||
+      { NOW+=" $1"; shift; continue; }
+    case "${VAL//[1-9]/0}" in
+      '' ) shift;;
+      0000-0000-0000 )
+        NOW+=" ${VAL:0:7}-${VAL:7:2} ${VAL:10:2}:${VAL:12:2}:"
+        shift;;
+      [+@-]0* ) NOW+=" $1"; shift;;
+      00:00: ) NOW+=" $1$(printf -- '%(%S)T' -1)"; shift;;
+      0* ) NOW+=" $1"; shift;;
       * ) break;;
+    esac
+    case "$NOW" in
+      *[0-9]d ) NOW+='ay';;
+      *[0-9]h ) NOW+='our';;
+      *[0-9]m ) NOW+='in';;
+      *[0-9]s ) NOW+='ec';;
     esac
   done
 
-  VAL="${NOW,,}"
-  VAL="${VAL/,/}"
-  VAL="${VAL//  / }"
-  case "$VAL" in
-    [a-z][a-z][a-z]' '[0-9]* | [+@-][0-9]* ) UTS="$(date +%s -d "$NOW")";;
+  NOW="${NOW,,}"
+  NOW="${NOW/,/}"
+  NOW="${NOW//   / }"
+  NOW="${NOW//  / }"
+  VAL="${WEEKDAY_NAMES_SHORT//:/ }"
+  for VAL in ${VAL,,}; do NOW="${NOW// $VAL / }"; done
+  NOW="${NOW# }"
+  case "${NOW//[1-9]/0}" in
+    [a-z][a-z][a-z]' 0 '* ) NOW="${NOW/ / 0}";; # ensure day has 2 digits
+  esac
+  case "${NOW//[1-9]/0}" in
+    [a-z][a-z][a-z]' 00 00:00 '* )
+      echo E: 'Seconds required for this time format!' >&2; return 4;;
+  esac
+  case "${NOW//[1-9]/0}" in
+    *[^0]00:00: ) NOW+="$(printf '%(%S)T' -1)";;
+    [a-z][a-z][a-z]' 00 00:00:00 0000 '[+-]0000 )
+      # e.g. __ "jan 01 00:00:00 1970 +0000"
+      #      ^-- Potential weekday and comma have already been cut off.
+      # Ubuntu focal's date command seems to understand month name
+      # abbreviations only if they are between day and year;
+      NOW="${NOW:4:2} ${NOW:0:3} ${NOW:16:4} ${NOW:7:8} ${NOW:21}"
+      ;; # dd         mmm        yyyy        HH:MM:SS   zzzzz
+  esac
+  UTS=
+  case "$NOW" in
+    [0-9]* | [+@-][0-9]* ) UTS="$(date +%s -d "$NOW")";;
     * ) echo E: "Flinching: Unsupported date format: '$NOW'" >&2; return 4;;
   esac
 
+  [ -n "$UTS" ] || return 4$(echo E: >&2 \
+    "Failed to parse date/time format: '$NOW'")
   [ "$UTS" -ge 1023456789 ] || return 4$(echo E: >&2 \
     'Flinching: Not time-travelling to long before git itself was published!')
     # Initial commit of the git repository for git itself:
