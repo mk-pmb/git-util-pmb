@@ -34,13 +34,11 @@ function wrin_cli_init () {
 
 
 function wrin_no_branches_yet () {
-  local VAL=
-  HINT+='H: No branches yet? To create an empty branch: env'
-  VAL='GIT_{AUTHOR,COMMITTER}_'
-  HINT+=" ${VAL}DATE='$(date -R)'"
+  HINT+='H: No branches yet? To create an empty branch: '
+  local GAC='GIT_{AUTHOR,COMMITTER}_'
   [ -z "$GIT_USER_SEEMS_FAKE" ] ||
-    HINT+=" ${VAL}NAME='$GIT_USER_NAME' ${VAL}EMAIL='$GIT_USER_MAIL'"
-  HINT+=" git commit --allow-empty --message='Init repo.'"$'\n'
+    HINT+="env ${GAC}NAME='$GIT_USER_NAME' ${GAC}EMAIL='$GIT_USER_MAIL' "
+  HINT+="git-ttcommit -20m --allow-empty --message='Init repo.'"$'\n'
 }
 
 
