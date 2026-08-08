@@ -150,12 +150,19 @@ function gax_explore_unused () {
   [ -d "$OBJ_DIR" ] || return 4$(
     echo E: 'Failed to detect annex objects dir!' >&2)
   [ "$#" -ge 1 ] || set -- $(git-annex unused 2>/dev/null |
-    sed -nre 's~^\s+[0-9]+\s+([A-Z]{2}[A-Za-z0-9.-]+)$~\1~p')
+    sed -nre 's~^\s+([0-9]+)\s+([A-Z]{2}[A-Za-z0-9.-]+)$~\1 \2~p')
   [ "$1" != -- ] || shift
+  local NUM= KEY=
   while [ "$#" -ge 1 ]; do
-    ( cd -- "$OBJ_DIR"/*/*/"$1" && xpl [A-Za-z]* )
-    # ^-- xpl = file-util-pmb/explore-fso.sh
-    shift
+    NUM="$1"; shift
+    KEY="$1"; shift
+    echo "#$NUM = $KEY was last used in…"
+    git whatchanged --date=iso --pretty=format:'%ad %h %s' --no-textconv \
+      -S"/$KEY/$KEY" | sed -zre 's~\n:(\S{6,7} ){4}\s*(\S+)\s*~\t\2 ~g' |
+      sed -nre 's~^\S~    &~p' | grep . ||
+      echo "    (no mentions in current branch's history)"
+    ( cd -- "$OBJ_DIR"/*/*/"$KEY" && xpl [A-Za-z]* )
+      # ^-- xpl = file-util-pmb/explore-fso.sh
     [ "$#" == 0 ] || echo
   done
 }
